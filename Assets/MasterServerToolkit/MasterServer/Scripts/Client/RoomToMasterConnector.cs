@@ -14,9 +14,9 @@ namespace MasterServerToolkit.MasterServer
             serverPort = Mst.Args.AsInt(Mst.Args.Names.MasterPort, serverPort);
         }
 
-        protected override IClientSocket ConnectionFactory()
-        {
-            return Mst.Create.ClientSocket();
-        }
+        //protected override IClientSocket ConnectionFactory()
+        //{
+        //    return Mst.Create.ClientSocket();
+        //}
     }
 }

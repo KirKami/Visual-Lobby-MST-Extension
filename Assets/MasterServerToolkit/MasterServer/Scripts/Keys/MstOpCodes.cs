@@ -38,6 +38,10 @@ namespace MasterServerToolkit.MasterServer
         public static ushort FindGamesRequest = nameof(FindGamesRequest).ToUint16Hash();
         public static ushort GetRegionsRequest = nameof(GetRegionsRequest).ToUint16Hash();
 
+        #region BF_MODIFIED
+        public static ushort FindRandomGameRequest = nameof(FindRandomGameRequest).ToUint16Hash();
+        #endregion
+
         public static ushort SignIn = nameof(SignIn).ToUint16Hash();
         public static ushort SignUp = nameof(SignUp).ToUint16Hash();
         public static ushort SignOut = nameof(SignOut).ToUint16Hash();

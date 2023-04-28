@@ -48,6 +48,10 @@ namespace MasterServerToolkit.MasterServer
             // Add handlers
             server.RegisterMessageHandler(MstOpCodes.FindGamesRequest, FindGamesRequestHandler);
             server.RegisterMessageHandler(MstOpCodes.GetRegionsRequest, GetRegionsRequestHandler);
+
+            #region BF_MODIFIED
+            server.RegisterMessageHandler(MstOpCodes.FindRandomGameRequest, FindRandomGameRequestHandler);
+            #endregion
         }
 
         /// <summary>
@@ -123,6 +127,45 @@ namespace MasterServerToolkit.MasterServer
                 message.Respond(e.Message, ResponseStatus.Error);
             }
         }
+
+        #region BF_MODIFIED
+        protected virtual void FindRandomGameRequestHandler(IIncomingMessage message)
+        {
+            try
+            {
+                var list = new List<GameInfoPacket>();
+                var filters = MstProperties.FromBytes(message.AsBytes());
+
+                foreach (var game in GameProviders.SelectMany(pr => pr.GetPublicGames(message.Peer, filters), (provider, game) => game))
+                {
+                    list.Add(game);
+                }
+
+                if (list.Count == 0)
+                {
+                    message.Respond("No game found. Try to create your own game", ResponseStatus.Default);
+                    return;
+                }
+                else
+                {
+                    //Find random game in list and remove all other games
+                    Random r = new Random();
+                    GameInfoPacket gameFound = list[r.Next(0,list.Count)];
+                    list.RemoveAll(e => e != gameFound);
+                }
+
+                // Convert to generic list and serialize to bytes
+                var bytes = list.Select(game => (ISerializablePacket)game).ToBytes();
+                message.Respond(bytes, ResponseStatus.Success);
+            }
+            // If we got another exception
+            catch (Exception e)
+            {
+                logger.Error(e.Message);
+                message.Respond(e.Message, ResponseStatus.Error);
+            }
+        }
+        #endregion
 
         #endregion
     }

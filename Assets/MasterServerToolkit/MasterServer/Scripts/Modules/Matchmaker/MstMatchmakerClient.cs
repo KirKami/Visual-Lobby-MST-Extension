@@ -9,6 +9,10 @@ namespace MasterServerToolkit.MasterServer
     public delegate void GetRegionsCallback(List<RegionInfo> regions);
     public delegate void GetPlayersCallback(List<string> players);
 
+    #region BF_MODIFIED
+    public delegate void FindRandomGameCallback(List<GameInfoPacket> game);
+    #endregion
+
     public class MstMatchmakerClient : MstBaseClient
     {
         /// <summary>
@@ -166,5 +170,45 @@ namespace MasterServerToolkit.MasterServer
                 callback?.Invoke(Games);
             });
         }
+        #region BF_MODIFIED
+
+        /// <summary>
+        /// Retrieves a random public game, which pass a provided filter.
+        /// (You can implement your own filtering by extending modules or "classes" 
+        /// that implement <see cref="IGamesProvider"/>)
+        /// </summary>
+        public void FindRandomGame(MstProperties filter, FindRandomGameCallback callback)
+        {
+            FindRandomGame(filter, callback, Connection);
+        }
+
+        /// <summary>
+        /// Retrieves a random public game, which pass a provided filter.
+        /// (You can implement your own filtering by extending modules or "classes" 
+        /// that implement <see cref="IGamesProvider"/>)
+        /// </summary>
+        public void FindRandomGame(MstProperties filter, FindRandomGameCallback callback, IClientSocket connection)
+        {
+            if (!connection.IsConnected)
+            {
+                Logs.Error("Not connected");
+                callback?.Invoke(new List<GameInfoPacket>());
+                return;
+            }
+
+            connection.SendMessage(MstOpCodes.FindRandomGameRequest, filter.ToBytes(), (status, response) =>
+            {
+                if (status != ResponseStatus.Success)
+                {
+                    Logs.Warn(response.AsString("Unknown error occured while requesting a random game"));
+                    callback?.Invoke(new List<GameInfoPacket>());
+                    return;
+                }
+
+                var games = response.AsPacketsList(() => new GameInfoPacket()).ToList();
+                callback?.Invoke(games);
+            });
+        }
+        #endregion
     }
 }

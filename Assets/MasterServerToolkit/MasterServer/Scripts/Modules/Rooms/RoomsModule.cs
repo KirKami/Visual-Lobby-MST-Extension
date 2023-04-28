@@ -89,7 +89,9 @@ namespace MasterServerToolkit.MasterServer
                 html.Append($"<b>Password:</b> {options.Password}, ");
                 html.Append($"<b>Region:</b> {options.Region}, ");
 
+                #region BF_MODIFIED
                 html.Append($"<b>Type:</b> {options.Type}, ");
+#endregion
 
                 html.Append($"<b>CustomOptions:</b> {options.CustomOptions}");
 
@@ -269,8 +271,9 @@ namespace MasterServerToolkit.MasterServer
                     OnlinePlayers = room.OnlineCount,
                     Properties = GetPublicRoomOptions(peer, room, filters),
                     IsPasswordProtected = !string.IsNullOrEmpty(room.Options.Password),
-                    //Type = GameInfoType.Room,
+                    #region BF_MODIFIED
                     Type = room.Options.Type,
+                    #endregion
                     Region = room.Options.Region
                 };
 
