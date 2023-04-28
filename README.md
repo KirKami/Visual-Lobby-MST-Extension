@@ -3,7 +3,6 @@ Extention for Unity's Master Server Toolkit for infrastructure like Phantasy Sta
 
 ## What is Visual Lobby:
 It is a term used by SEGA for Phantasy Star Online networking. It separates Lobby servers where large number of players can walk around as their avatars, perform basic actions and communicate with other players. And Room servers where actual game is being played with small number of players connected.
-![Topology of network connections for this package](./Visual Lobby Topology.png)
 
 ## What is this package:
 This package expands Master Server Toolkit to provide basic functions of Visual Lobby in your game.  
