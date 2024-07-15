@@ -12,6 +12,9 @@ using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections;
+using WebSocketSharp;
+
+using LogLevel = MasterServerToolkit.Logging.LogLevel;
 
 namespace VisualLobby
 {
@@ -20,7 +23,7 @@ namespace VisualLobby
         #region INSPECTOR
 
         [Header("Mirror Network Manager Components"), SerializeField]
-        protected RoomServerManager roomServerManager;
+        public RoomServerManager roomServerManager;
 
         /// <summary>
         /// Log levelof this module
@@ -129,26 +132,39 @@ namespace VisualLobby
             // Find room server if it is not assigned in inspector
             if (!roomServerManager) roomServerManager = GetComponent<RoomServerManager>();
 
+            //Set up parameters value for starting server. Use test environment values if needed.
+#if UNITY_EDITOR
+            EditorTestEnvironmentSettings debugModeParams = EditorTestEnvironmentSettings.Instance;
+            bool editorDebugMode = debugModeParams.useEditorDebugMode;
+
+            string debugModeScene = !debugModeParams.roomOnlineScene.IsNullOrEmpty() ? debugModeParams.roomOnlineScene : onlineScene;
+
+            string onlineSceneName = editorDebugMode ? debugModeScene : onlineScene ;
+            ushort maxConnectionsCount = editorDebugMode ? debugModeParams.roomOptions.MaxConnections : roomServerManager.RoomOptions.MaxConnections;
+            string roomIP = editorDebugMode ? debugModeParams.roomOptions.RoomIp : roomServerManager.RoomOptions.RoomIp;
+            int roomPort = editorDebugMode ? debugModeParams.roomOptions.RoomPort : roomServerManager.RoomOptions.RoomPort;
+#else
+            string onlineSceneName = onlineScene;
+            ushort maxConnectionsCount = roomServerManager.RoomOptions.MaxConnections;
+            string roomIP = roomServerManager.RoomOptions.RoomIp;
+            int roomPort = roomServerManager.RoomOptions.RoomPort;
+#endif
             // Set online scene
-            onlineScene = Mst.Args.AsString(Mst.Args.Names.RoomOnlineScene, SceneManager.GetActiveScene().name);
+            onlineScene = Mst.Args.AsString(Mst.Args.Names.RoomOnlineScene, onlineSceneName);
 
             // Set the max number of connections
-            maxConnections = roomServerManager.RoomOptions.MaxConnections;
+            maxConnections = maxConnectionsCount;
 
             // Set room IP just for information purpose only
-            SetAddress(roomServerManager.RoomOptions.RoomIp);
+            SetAddress(roomIP);
 
             // Set room port
-            SetPort(roomServerManager.RoomOptions.RoomPort);
+            SetPort(roomPort);
 
-            logger.Info($"Starting Room Server: {networkAddress}:{roomServerManager.RoomOptions.RoomPort}");
-            logger.Info($"Online Scene: {onlineScene}");
+            logger.Info($"Starting Room Server: {networkAddress}:{roomPort}");
+            logger.Info($"Online Scene: {onlineSceneName}");
 
-#if UNITY_EDITOR
-            //StartHost();
-#else
             StartServer();
-#endif
         }
 
         public void StopRoomServer()
@@ -204,7 +220,7 @@ namespace VisualLobby
             NetworkServer.RegisterHandler<ValidateRoomAccessRequestMessage>(ValidateRoomAccessRequestHandler, false);
             if (roomServerManager) roomServerManager.OnServerStarted();
             OnServerStartedEvent?.Invoke();
-            StartCoroutine(ServerLoadSubScenes());
+            //StartCoroutine(ServerLoadSubScenes());
         }
 
         public override void OnStopServer()

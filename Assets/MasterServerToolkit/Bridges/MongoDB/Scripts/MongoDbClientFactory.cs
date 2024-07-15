@@ -1,5 +1,4 @@
 using MasterServerToolkit.MasterServer;
-using MasterServerToolkit.Utils;
 using MongoDB.Driver;
 using UnityEngine;
 
@@ -8,12 +7,6 @@ namespace MasterServerToolkit.Bridges.MongoDB
     public class MongoDbClientFactory : MonoBehaviour
     {
         #region INSPECTOR
-
-        [SerializeField]
-        private HelpBox _header = new HelpBox()
-        {
-            Text = "This is a mongo db client factory that helps to create client for all mongo db accessors"
-        };
 
         [Header("MongoDB Settings"), SerializeField]
         private string defaultConnectionString = "mongodb://localhost";
@@ -52,7 +45,7 @@ namespace MasterServerToolkit.Bridges.MongoDB
 
         private void Awake()
         {
-            ConnectionString = Mst.Args.AsString(Mst.Args.Names.DbConnectionString, defaultConnectionString);
+            ConnectionString = Mst.Args.AsString(Mst.Args.Names.DatabaseConfiguration, defaultConnectionString);
             Client = new MongoClient(ConnectionString);
 
             // TODO

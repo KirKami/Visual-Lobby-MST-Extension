@@ -47,7 +47,7 @@ MonoBehaviour:
   logLevel: 3
   isGlobal: 1
   roomConnectionTimeout: 10
-  autoStartInEditor: 1
+  autoStartInEditor: 0
   autoStartDelay: 1
   signInAsGuest: 1
   username: qwerty

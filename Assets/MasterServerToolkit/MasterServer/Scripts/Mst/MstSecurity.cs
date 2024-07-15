@@ -2,7 +2,6 @@
 using MasterServerToolkit.Networking;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -17,19 +16,21 @@ namespace MasterServerToolkit.MasterServer
     /// <summary>
     /// Helper class, which implements means to encrypt and decrypt data
     /// </summary>
-    public partial class MstSecurity : MstBaseClient
+    public class MstSecurity : MstBaseClient
     {
         public delegate void PermissionLevelCallback(int? permissionLevel, string error);
+
+        private class EncryptionData
+        {
+            public string ClientAesKey { get; set; }
+            public RSACryptoServiceProvider ClientsCsp { get; set; }
+            public RSAParameters ClientsPublicKey { get; set; }
+        }
 
         /// <summary>
         /// 
         /// </summary>
         private ClientAuthenticatorProviderDelegate clientAuthenticatorProvider;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        private ClientValidattorProviderDelegate clientValidatorProvider;
 
         /// <summary>
         /// Salt string
@@ -79,45 +80,25 @@ namespace MasterServerToolkit.MasterServer
         private void DefaultAuthenticator(IClientSocket connection, SuccessCallback callback)
         {
             string deviceIdHash = CreateHash(SystemInfo.deviceUniqueIdentifier);
-            string applicationKeyHash = CreateHash(Mst.Settings.ApplicationKey);
+            string applicationKeyHash = CreateHash(connection.Password);
 
             var accessInfo = new ProvideServerAccessCheckPacket()
             {
                 DeviceId = deviceIdHash,
-                ApplicationKey = applicationKeyHash
+                Password = applicationKeyHash
             };
 
             connection.SendMessage(MstOpCodes.ServerAccessRequest, accessInfo, (status, response) =>
             {
                 if (status != ResponseStatus.Success)
                 {
-                    callback?.Invoke(false, response.AsString());
-                    Logs.Error(response.AsString());
+                    callback?.Invoke(false, response?.AsString());
+                    Logger.Error(response.AsString());
                     return;
                 }
 
                 callback?.Invoke(true, string.Empty);
             });
-        }
-
-        /// <summary>
-        /// Default client validation method used by server to validate incoming connections
-        /// </summary>
-        /// <param name="accessCheckOptions"></param>
-        /// <param name="callback"></param>
-        private void DefaultValidator(ProvideServerAccessCheckPacket accessCheckOptions, SuccessCallback callback)
-        {
-            string applicationKeyHash = accessCheckOptions.ApplicationKey;
-            string applicationKey = Mst.Settings.ApplicationKey;
-
-            if (ValidatePassword(applicationKey, applicationKeyHash))
-            {
-                callback?.Invoke(true, string.Empty);
-            }
-            else
-            {
-                callback?.Invoke(false, "Application key is not valid");
-            }
         }
 
         /// <summary>
@@ -127,15 +108,6 @@ namespace MasterServerToolkit.MasterServer
         public void SetClientAuthenticator(ClientAuthenticatorProviderDelegate clientAuthenticator)
         {
             clientAuthenticatorProvider = clientAuthenticator;
-        }
-
-        /// <summary>
-        /// Sets new validator used in <see cref="ValidateConnection(ProvideServerAccessCheckPacket, SuccessCallback)"/> method
-        /// </summary>
-        /// <param name="clientValidattor"></param>
-        public void SetClientValidator(ClientValidattorProviderDelegate clientValidattor)
-        {
-            clientValidatorProvider = clientValidattor;
         }
 
         /// <summary>
@@ -149,19 +121,6 @@ namespace MasterServerToolkit.MasterServer
                 clientAuthenticatorProvider.Invoke(connection, callback);
             else
                 DefaultAuthenticator(connection, callback);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="accessCheckOptions"></param>
-        /// <param name="callback"></param>
-        public void ValidateConnection(ProvideServerAccessCheckPacket accessCheckOptions, SuccessCallback callback)
-        {
-            if (clientValidatorProvider != null)
-                clientValidatorProvider.Invoke(accessCheckOptions, callback);
-            else
-                DefaultValidator(accessCheckOptions, callback);
         }
 
         /// <summary>
@@ -227,13 +186,14 @@ namespace MasterServerToolkit.MasterServer
                 return;
             }
 
-            // Serialize public key
-            var sw = new StringWriter();
-            var xs = new System.Xml.Serialization.XmlSerializer(typeof(RSAParameters));
-            xs.Serialize(sw, data.ClientsPublicKey);
+            RSAParametersPacket rsaData = new RSAParametersPacket
+            {
+                exponent = data.ClientsPublicKey.Exponent,
+                modulus = data.ClientsPublicKey.Modulus
+            };
 
             // Send the request
-            connection.SendMessage(MstOpCodes.AesKeyRequest, sw.ToString(), (status, response) =>
+            connection.SendMessage(MstOpCodes.AesKeyRequest, rsaData, (status, response) =>
             {
                 if (data.ClientAesKey != null)
                 {
@@ -254,8 +214,6 @@ namespace MasterServerToolkit.MasterServer
 
                 callback.Invoke(data.ClientAesKey);
             });
-
-            sw.Close();
         }
 
         /// <summary>
@@ -440,7 +398,6 @@ namespace MasterServerToolkit.MasterServer
                     {
                         using (StreamReader srDecrypt = new StreamReader(csDecrypt))
                         {
-
                             // Read the decrypted bytes from the decrypting stream
                             // and place them in a string.
                             plaintext = srDecrypt.ReadToEnd();
@@ -554,6 +511,15 @@ namespace MasterServerToolkit.MasterServer
             };
 
             return pbkdf2.GetBytes(outputBytes);
+        }
+
+        public string CreateSignatureHMAC_SHA256(string secret, string message)
+        {
+            using (HMACSHA256 hmac = new HMACSHA256(Encoding.UTF8.GetBytes(secret)))
+            {
+                byte[] hmacValue = hmac.ComputeHash(Encoding.UTF8.GetBytes(message));
+                return Convert.ToBase64String(hmacValue);
+            }
         }
     }
 }

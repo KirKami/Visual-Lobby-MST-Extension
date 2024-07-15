@@ -14,7 +14,6 @@ namespace Mirror
         readonly HashSet<NetworkConnectionToClient> newObservers =
             new HashSet<NetworkConnectionToClient>();
 
-
         // rebuild observers for the given NetworkIdentity.
         // Server will automatically spawn/despawn added/removed ones.
         //   newObservers: cached hashset to put the result into
@@ -55,7 +54,7 @@ namespace Mirror
             newObservers.Clear();
 
             // not force hidden?
-            if (identity.visible != Visibility.ForceHidden)
+            if (identity.visibility != Visibility.ForceHidden)
             {
                 OnRebuildObservers(identity, newObservers);
             }

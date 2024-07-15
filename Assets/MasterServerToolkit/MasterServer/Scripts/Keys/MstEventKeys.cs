@@ -29,6 +29,11 @@
         public static string showGamesListView = "mst.showGamesListView";
         public static string hideGamesListView = "mst.hideGamesListView";
 
+        #region BF_MODIFIED
+        public static string showRegionsListView = "mst.showRegionsListView";
+        public static string hideRegionsListView = "mst.hideRegionsListView";
+        #endregion
+
         public static string showPlayersListView = "mst.showPlayersListView";
         public static string hidePlayersListView = "mst.hidePlayersListView";
 

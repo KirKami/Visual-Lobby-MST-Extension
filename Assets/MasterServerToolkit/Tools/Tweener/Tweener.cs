@@ -10,6 +10,18 @@ namespace MasterServerToolkit.Utils
     {
         public int Id { get; set; }
         public Tweener Tweener { get; set; }
+        public bool IsRunning
+        {
+            get
+            {
+                return Tweener.IsRunning(Id);
+            }
+        }
+
+        public void Cancel()
+        {
+            Tweener.Cancel(this);
+        }
 
         public TweenerActionInfo OnComplete(TweenerActionInfoCallback callback)
         {
@@ -25,7 +37,7 @@ namespace MasterServerToolkit.Utils
         private static int _id = 0;
         private static Tweener _tweener;
         private static readonly ConcurrentDictionary<int, Func<bool>> actions = new ConcurrentDictionary<int, Func<bool>>();
-        private static readonly ConcurrentDictionary<int, TweenerActionInfoCallback> onCompletes = new ConcurrentDictionary<int, TweenerActionInfoCallback>();
+        private static readonly ConcurrentDictionary<int, TweenerActionInfoCallback> onCompleted = new ConcurrentDictionary<int, TweenerActionInfoCallback>();
 
         public static int NextId => _id++;
 
@@ -35,7 +47,7 @@ namespace MasterServerToolkit.Utils
         {
             _id = 0;
             actions.Clear();
-            onCompletes.Clear();
+            onCompleted.Clear();
         }
 #endif
 
@@ -57,12 +69,17 @@ namespace MasterServerToolkit.Utils
 
         private void ProcessAction(KeyValuePair<int, Func<bool>> actionKvp)
         {
-            if (actionKvp.Value != null && actionKvp.Value.Invoke())
+            if (actionKvp.Value?.Invoke() == true)
             {
-                actions.TryRemove(actionKvp.Key, out _);
+                if (actions.TryRemove(actionKvp.Key, out _))
+                {
+                    Debug.Log($"Tween action {actionKvp.Key} has completed");
+                }
 
-                if (onCompletes.TryRemove(actionKvp.Key, out var onComplete))
+                if (onCompleted.TryRemove(actionKvp.Key, out var onComplete))
                     onComplete?.Invoke(actionKvp.Key);
+
+
             }
         }
 
@@ -95,7 +112,7 @@ namespace MasterServerToolkit.Utils
         public static void AddOnCompleteListener(TweenerActionInfo actionInfo, TweenerActionInfoCallback callback)
         {
             if (actionInfo == null) return;
-            onCompletes.TryAdd(actionInfo.Id, callback);
+            onCompleted.TryAdd(actionInfo.Id, callback);
         }
 
         /// <summary>
@@ -104,7 +121,7 @@ namespace MasterServerToolkit.Utils
         /// <param name="callback"></param>
         public static void AddOnCompleteListener(int id, TweenerActionInfoCallback callback)
         {
-            onCompletes.TryAdd(id, callback);
+            onCompleted.TryAdd(id, callback);
         }
 
         /// <summary>
@@ -125,7 +142,11 @@ namespace MasterServerToolkit.Utils
         /// <returns></returns>
         public static Tweener Cancel(int id)
         {
-            actions.TryRemove(id, out _);
+            if (actions.TryRemove(id, out _))
+            {
+                Debug.Log($"Tween action {id} has canceled");
+            }
+
             return _tweener;
         }
 
@@ -144,7 +165,12 @@ namespace MasterServerToolkit.Utils
                 Tweener = _tweener
             };
 
-            actions.TryAdd(info.Id, action);
+            if (actions.TryAdd(info.Id, action))
+            {
+                Debug.Log($"Tween action {info.Id} has started");
+            }
+
+
             return info;
         }
     }

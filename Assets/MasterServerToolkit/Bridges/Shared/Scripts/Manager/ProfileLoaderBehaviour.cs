@@ -1,5 +1,5 @@
 ﻿using MasterServerToolkit.MasterServer;
-using MasterServerToolkit.Utils;
+using UnityEngine;
 using UnityEngine.Events;
 
 namespace MasterServerToolkit.Bridges
@@ -7,6 +7,9 @@ namespace MasterServerToolkit.Bridges
     public class ProfileLoaderBehaviour : BaseClientBehaviour
     {
         #region INSPECTOR
+
+        [SerializeField]
+        private ObservableBasePopulator[] populators;
 
         /// <summary>
         /// Invokes when profile is loaded
@@ -33,7 +36,15 @@ namespace MasterServerToolkit.Bridges
         protected override void Awake()
         {
             base.Awake();
-            Profile = new ObservableProfile();
+
+            if (Mst.Client.Profiles.HasProfile == false)
+            {
+                Profile = CreateProfile();
+            }
+            else
+            {
+                Profile = Mst.Client.Profiles.Current;
+            }
         }
 
         /// <summary>
@@ -45,32 +56,37 @@ namespace MasterServerToolkit.Bridges
         /// </summary>
         protected virtual void OnProfileLoadFailed() { }
 
+        protected ObservableProfile CreateProfile()
+        {
+            var profile = new ObservableProfile();
+
+            foreach (var populator in populators)
+            {
+                profile.Add(populator.Populate());
+            }
+
+            return profile;
+        }
+
         /// <summary>
         /// Get profile data from master
         /// </summary>
         public virtual void LoadProfile()
         {
-            Mst.Events.Invoke(MstEventKeys.showLoadingInfo, "Loading profile... Please wait!");
-
-            Tweener.DelayedCall(0.1f, () =>
+            Mst.Client.Profiles.FillInProfileValues(Profile, (isSuccessful, error) =>
             {
-                Mst.Client.Profiles.FillInProfileValues(Profile, (isSuccessful, error) =>
+                if (isSuccessful)
                 {
-                    Mst.Events.Invoke(MstEventKeys.hideLoadingInfo);
-
-                    if (isSuccessful)
-                    {
-                        OnProfileLoaded();
-                        OnProfileLoadedEvent?.Invoke();
-                    }
-                    else
-                    {
-                        logger.Error($"Could not load user profile. Error: {error}");
-
-                        OnProfileLoadFailed();
-                        OnProfileLoadFailedEvent?.Invoke();
-                    }
-                });
+                    Logger.Info($"Profile is loaded");
+                    OnProfileLoaded();
+                    OnProfileLoadedEvent?.Invoke();
+                }
+                else
+                {
+                    Logger.Error($"Could not load user profile. Error: {error}");
+                    OnProfileLoadFailed();
+                    OnProfileLoadFailedEvent?.Invoke();
+                }
             });
         }
     }

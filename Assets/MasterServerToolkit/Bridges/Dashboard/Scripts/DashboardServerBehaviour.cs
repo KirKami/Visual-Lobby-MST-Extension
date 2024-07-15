@@ -57,20 +57,16 @@ namespace MasterServerToolkit.Bridges.Dashboard
         {
             base.Start();
 
-            // Start server at start
-            if (Mst.Args.StartMaster && !Mst.Runtime.IsEditor)
+            // Start the server on next frame
+            MstTimer.WaitForEndOfFrame(() =>
             {
-                // Start the server on next frame
-                MstTimer.WaitForEndOfFrame(() =>
-                {
-                    StartServer();
-                });
-            }
+                StartServer();
+            });
         }
 
         protected override void OnStartedServer()
         {
-            logger.Info($"{GetType().Name.SplitByUppercase()} started and listening to: {serverIp}:{serverPort}");
+            logger.Info($"{GetType().Name.FromCamelcase()} started and listening to: {serverIp}:{serverPort}");
 
             base.OnStartedServer();
 
@@ -79,7 +75,7 @@ namespace MasterServerToolkit.Bridges.Dashboard
 
         protected override void OnStoppedServer()
         {
-            logger.Info($"{GetType().Name.SplitByUppercase()} stopped");
+            logger.Info($"{GetType().Name.FromCamelcase()} stopped");
 
             OnDashboardStoppedEvent?.Invoke(this);
         }

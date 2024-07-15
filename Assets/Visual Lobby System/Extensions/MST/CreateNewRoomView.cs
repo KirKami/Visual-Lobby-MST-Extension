@@ -19,8 +19,10 @@
 //        private TMP_Dropdown roomRegionNameInputDropdown;
 //        [SerializeField]
 //        private TMP_InputField roomPasswordInputField;
+//        #region BF_MODIFIED
 //        [SerializeField]
 //        private GameInfoType gameTypeToSpawn;
+//        #endregion
 
 //        protected override void Awake()
 //        {

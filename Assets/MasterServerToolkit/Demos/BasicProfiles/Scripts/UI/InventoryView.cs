@@ -31,7 +31,6 @@ namespace MasterServerToolkit.Examples.BasicProfile
 
         #endregion
 
-        private ProfileLoaderBehaviour profileLoader;
         private readonly Dictionary<string, ItemUI> itemUis = new Dictionary<string, ItemUI>();
 
         protected override void Start()
@@ -39,24 +38,20 @@ namespace MasterServerToolkit.Examples.BasicProfile
             base.Start();
 
             DrawStoreOffers();
-
-            profileLoader = FindObjectOfType<ProfileLoaderBehaviour>();
-            profileLoader.OnProfileLoadedEvent.AddListener(OnProfileLoadedEventHandler);
+            Mst.Client.Profiles.OnProfileLoadedEvent += Profiles_OnProfileLoadedEvent;
         }
 
         protected override void OnDestroy()
         {
             base.OnDestroy();
-
-            if (profileLoader && profileLoader.Profile != null)
-                profileLoader.Profile.OnPropertyUpdatedEvent -= Profile_OnPropertyUpdatedEvent;
+            Mst.Client.Profiles.OnProfileLoadedEvent -= Profiles_OnProfileLoadedEvent;
         }
 
-        private void OnProfileLoadedEventHandler()
+        private void Profiles_OnProfileLoadedEvent(ObservableProfile profile)
         {
-            profileLoader.Profile.OnPropertyUpdatedEvent += Profile_OnPropertyUpdatedEvent;
+            profile.OnPropertyUpdatedEvent += Profile_OnPropertyUpdatedEvent;
 
-            if (profileLoader.Profile.TryGet(ProfilePropertyOpCodes.items, out ObservableDictStringInt items))
+            if (profile.TryGet(ProfilePropertyOpCodes.items, out ObservableDictStringInt items))
             {
                 DrawBackpackItems(items);
 
@@ -65,7 +60,7 @@ namespace MasterServerToolkit.Examples.BasicProfile
                 items.OnSetEvent += Items_OnSetEvent;
             }
 
-            foreach (var property in profileLoader.Profile.Properties)
+            foreach (var property in profile.Properties)
                 Profile_OnPropertyUpdatedEvent(property.Key, property.Value);
         }
 
@@ -185,44 +180,50 @@ namespace MasterServerToolkit.Examples.BasicProfile
 
         private void BuyItem(StoreOffer storeOffer)
         {
-            var data = new BuySellItemPacket
+            if (Mst.Client.Connection.IsConnected)
             {
-                Id = storeOffer.id,
-                Price = storeOffer.price,
-                Currency = storeOffer.currency
-            };
-
-            Mst.Client.Connection.SendMessage(MessageOpCodes.BuyDemoItem, data, (status, responce) =>
-            {
-                if (status != Networking.ResponseStatus.Success)
+                var data = new BuySellItemPacket
                 {
-                    Mst.Events.Invoke(MstEventKeys.showOkDialogBox, new OkDialogBoxEventMessage($"An error occurred: {responce.AsString("Unhandled")}", null));
-                    return;
-                }
+                    Id = storeOffer.id,
+                    Price = storeOffer.price,
+                    Currency = storeOffer.currency
+                };
 
-                logger.Info($"You bought {storeOffer.name}");
-            });
+                Mst.Client.Connection.SendMessage(MessageOpCodes.BuyDemoItem, data, (status, responce) =>
+                {
+                    if (status != Networking.ResponseStatus.Success)
+                    {
+                        Mst.Events.Invoke(MstEventKeys.showOkDialogBox, new OkDialogBoxEventMessage($"An error occurred: {responce.AsString("Unhandled")}", null));
+                        return;
+                    }
+
+                    logger.Info($"You bought {storeOffer.name}");
+                });
+            }
         }
 
         private void SellItem(StoreOffer storeOffer)
         {
-            var data = new BuySellItemPacket
+            if (Mst.Client.Connection.IsConnected)
             {
-                Id = storeOffer.id,
-                Price = (int)(storeOffer.price * 0.7f),
-                Currency = storeOffer.currency
-            };
-
-            Mst.Client.Connection.SendMessage(MessageOpCodes.SellDemoItem, data, (status, responce) =>
-            {
-                if (status != Networking.ResponseStatus.Success)
+                var data = new BuySellItemPacket
                 {
-                    Mst.Events.Invoke(MstEventKeys.showOkDialogBox, new OkDialogBoxEventMessage($"An error occurred: {responce.AsString("Unhandled")}", null));
-                    return;
-                }
+                    Id = storeOffer.id,
+                    Price = (int)(storeOffer.price * 0.7f),
+                    Currency = storeOffer.currency
+                };
 
-                logger.Info($"You sold {storeOffer.name}");
-            });
+                Mst.Client.Connection.SendMessage(MessageOpCodes.SellDemoItem, data, (status, responce) =>
+                {
+                    if (status != Networking.ResponseStatus.Success)
+                    {
+                        Mst.Events.Invoke(MstEventKeys.showOkDialogBox, new OkDialogBoxEventMessage($"An error occurred: {responce.AsString("Unhandled")}", null));
+                        return;
+                    }
+
+                    logger.Info($"You sold {storeOffer.name}");
+                });
+            }
         }
     }
 }

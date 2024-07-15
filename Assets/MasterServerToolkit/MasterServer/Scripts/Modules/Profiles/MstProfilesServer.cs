@@ -37,19 +37,42 @@ namespace MasterServerToolkit.MasterServer
         }
 
         /// <summary>
-        /// Sends a request to server, retrieves all profile values, and applies them to a provided
-        /// profile
+        /// Gets user profile by user id
         /// </summary>
-        public void FillProfileValues(ObservableServerProfile profile, SuccessCallback callback)
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public ObservableServerProfile GetById(string userId)
         {
-            FillInProfileValues(profile, callback, Connection);
+            profilesList.TryGetValue(userId, out ObservableServerProfile profile);
+            return profile;
+        }
+
+        /// <summary>
+        /// Gets user profile by user id
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="profile"></param>
+        /// <returns></returns>
+        public bool TryGetById(string userId, out ObservableServerProfile profile)
+        {
+            profile = GetById(userId);
+            return profile != null;
         }
 
         /// <summary>
         /// Sends a request to server, retrieves all profile values, and applies them to a provided
         /// profile
         /// </summary>
-        public void FillInProfileValues(ObservableServerProfile profile, SuccessCallback callback, IClientSocket connection)
+        public void FillProfileValues(ObservableServerProfile profile, SuccessCallback callback)
+        {
+            FillProfileValues(profile, callback, Connection);
+        }
+
+        /// <summary>
+        /// Sends a request to server, retrieves all profile values, and applies them to a provided
+        /// profile
+        /// </summary>
+        public void FillProfileValues(ObservableServerProfile profile, SuccessCallback callback, IClientSocket connection)
         {
             if (!connection.IsConnected)
             {
@@ -65,8 +88,10 @@ namespace MasterServerToolkit.MasterServer
                     return;
                 }
 
+                byte[] rawProfile = response.AsBytes();
+
                 // Use the bytes received, to replicate the profile
-                profile.FromBytes(response.AsBytes());
+                profile.FromBytes(rawProfile);
 
                 // Clear all updates if exist
                 profile.ClearUpdates();

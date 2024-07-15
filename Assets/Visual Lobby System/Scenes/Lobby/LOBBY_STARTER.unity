@@ -38,7 +38,6 @@ RenderSettings:
   m_ReflectionIntensity: 0
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -123,6 +122,70 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &83814479
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 83814481}
+  - component: {fileID: 83814480}
+  m_Layer: 0
+  m_Name: --CONNECTION_TO_MASTER
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &83814480
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 83814479}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f4cb439243992949b9b12a35c4760c6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  logLevel: 0
+  isGlobal: 1
+  serverIp: 127.0.0.1
+  serverPort: 5000
+  timeout: 5
+  maxAttemptsToConnect: 5
+  waitAndConnect: 0.2
+  connectOnStart: 1
+  useSecure: 0
+  service: mst
+  password: mst
+  OnConnectedEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  OnFailedConnectEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  OnDisconnectedEvent:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!4 &83814481
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 83814479}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3103.9978, y: 543.1653, z: -2735.25}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &952015956
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -152,18 +215,26 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2338929351766837712, guid: 427f6713927dfc546b4f27b33bd291d7, type: 3}
       propertyPath: OnBeforeRoomRegisterEvent.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
-      value: 5
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2338929351766837712, guid: 427f6713927dfc546b4f27b33bd291d7, type: 3}
       propertyPath: OnBeforeRoomRegisterEvent.m_PersistentCalls.m_Calls.Array.data[1].m_Mode
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2338929351766837712, guid: 427f6713927dfc546b4f27b33bd291d7, type: 3}
+      propertyPath: OnBeforeRoomRegisterEvent.m_PersistentCalls.m_Calls.Array.data[2].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2338929351766837712, guid: 427f6713927dfc546b4f27b33bd291d7, type: 3}
       propertyPath: OnBeforeRoomRegisterEvent.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 952015958}
+    - target: {fileID: 2338929351766837712, guid: 427f6713927dfc546b4f27b33bd291d7, type: 3}
+      propertyPath: OnBeforeRoomRegisterEvent.m_PersistentCalls.m_Calls.Array.data[1].m_Target
       value: 
       objectReference: {fileID: 952015957}
     - target: {fileID: 2338929351766837712, guid: 427f6713927dfc546b4f27b33bd291d7, type: 3}
-      propertyPath: OnBeforeRoomRegisterEvent.m_PersistentCalls.m_Calls.Array.data[1].m_Target
+      propertyPath: OnBeforeRoomRegisterEvent.m_PersistentCalls.m_Calls.Array.data[2].m_Target
       value: 
       objectReference: {fileID: 952015957}
     - target: {fileID: 2338929351766837712, guid: 427f6713927dfc546b4f27b33bd291d7, type: 3}
@@ -171,24 +242,36 @@ PrefabInstance:
       value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 2338929351766837712, guid: 427f6713927dfc546b4f27b33bd291d7, type: 3}
+      propertyPath: OnBeforeRoomRegisterEvent.m_PersistentCalls.m_Calls.Array.data[2].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2338929351766837712, guid: 427f6713927dfc546b4f27b33bd291d7, type: 3}
       propertyPath: OnBeforeRoomRegisterEvent.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: ServerChangeScene
+      value: OverrideRoomOptionsInTest
       objectReference: {fileID: 0}
     - target: {fileID: 2338929351766837712, guid: 427f6713927dfc546b4f27b33bd291d7, type: 3}
       propertyPath: OnBeforeRoomRegisterEvent.m_PersistentCalls.m_Calls.Array.data[1].m_MethodName
       value: StartRoomServer
       objectReference: {fileID: 0}
     - target: {fileID: 2338929351766837712, guid: 427f6713927dfc546b4f27b33bd291d7, type: 3}
+      propertyPath: OnBeforeRoomRegisterEvent.m_PersistentCalls.m_Calls.Array.data[2].m_MethodName
+      value: StartRoomServer
+      objectReference: {fileID: 0}
+    - target: {fileID: 2338929351766837712, guid: 427f6713927dfc546b4f27b33bd291d7, type: 3}
       propertyPath: OnBeforeRoomRegisterEvent.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: Mirror.NetworkManager, Mirror
+      value: VisualLobby.EditorTestEnvironmentSettings, VisualLobby.Editor
       objectReference: {fileID: 0}
     - target: {fileID: 2338929351766837712, guid: 427f6713927dfc546b4f27b33bd291d7, type: 3}
       propertyPath: OnBeforeRoomRegisterEvent.m_PersistentCalls.m_Calls.Array.data[1].m_TargetAssemblyTypeName
       value: VisualLobby.Extensions.Mirror.AdditiveLevelsRoomNetworkManager, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 2338929351766837712, guid: 427f6713927dfc546b4f27b33bd291d7, type: 3}
+      propertyPath: OnBeforeRoomRegisterEvent.m_PersistentCalls.m_Calls.Array.data[2].m_TargetAssemblyTypeName
+      value: VisualLobby.Extensions.Mirror.AdditiveLevelsRoomNetworkManager, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 2338929351766837712, guid: 427f6713927dfc546b4f27b33bd291d7, type: 3}
       propertyPath: OnBeforeRoomRegisterEvent.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_StringArgument
-      value: LOBBY_ONLINE
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 2338929351766837712, guid: 427f6713927dfc546b4f27b33bd291d7, type: 3}
       propertyPath: OnBeforeRoomRegisterEvent.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
@@ -198,9 +281,17 @@ PrefabInstance:
       propertyPath: OnBeforeRoomRegisterEvent.m_PersistentCalls.m_Calls.Array.data[1].m_Arguments.m_ObjectArgumentAssemblyTypeName
       value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
+    - target: {fileID: 2338929351766837712, guid: 427f6713927dfc546b4f27b33bd291d7, type: 3}
+      propertyPath: OnBeforeRoomRegisterEvent.m_PersistentCalls.m_Calls.Array.data[2].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
     - target: {fileID: 2338929351766837713, guid: 427f6713927dfc546b4f27b33bd291d7, type: 3}
       propertyPath: m_Name
       value: --ROOM_SERVER
+      objectReference: {fileID: 0}
+    - target: {fileID: 2338929351766837714, guid: 427f6713927dfc546b4f27b33bd291d7, type: 3}
+      propertyPath: onlineScene
+      value: Assets/Visual Lobby System/Scenes/Lobby/LOBBY_ONLINE.unity
       objectReference: {fileID: 0}
     - target: {fileID: 2338929351766837714, guid: 427f6713927dfc546b4f27b33bd291d7, type: 3}
       propertyPath: maxConnections
@@ -262,6 +353,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4009287822611931655, guid: 427f6713927dfc546b4f27b33bd291d7, type: 3}
+      propertyPath: roomOptions.Type
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4009287822611931655, guid: 427f6713927dfc546b4f27b33bd291d7, type: 3}
+      propertyPath: roomOptions.MaxConnections
+      value: 100
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 427f6713927dfc546b4f27b33bd291d7, type: 3}
 --- !u!114 &952015957 stripped
@@ -273,6 +372,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: db56c125e9e43914f8eb1efbac89dbf1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &952015958 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4009287822611931655, guid: 427f6713927dfc546b4f27b33bd291d7, type: 3}
+  m_PrefabInstance: {fileID: 952015956}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 656544018af1cc4468e797ef96c1c71f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1001 &1036977227

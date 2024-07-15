@@ -1,4 +1,5 @@
-﻿using UnityEditor;
+﻿#if UNITY_EDITOR
+using UnityEditor;
 using UnityEngine;
 
 namespace MasterServerToolkit.Utils.Editor
@@ -11,9 +12,7 @@ namespace MasterServerToolkit.Utils.Editor
             var info = fieldInfo.GetValue(property.serializedObject.targetObject) as HelpBox;
 
             EditorGUI.BeginProperty(position, label, property);
-
             EditorGUI.HelpBox(position, info.Text, (MessageType)info.Type);
-
             EditorGUI.EndProperty();
         }
 
@@ -24,3 +23,4 @@ namespace MasterServerToolkit.Utils.Editor
         }
     }
 }
+#endif

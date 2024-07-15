@@ -3,15 +3,25 @@ using UnityEngine.SceneManagement;
 
 // This sets up the scene camera for the local player
 
-namespace Mirror.Examples.NetworkRoom
+namespace Mirror.Examples.Common
 {
+    [AddComponentMenu("")]
+    [DisallowMultipleComponent]
     public class PlayerCamera : NetworkBehaviour
     {
         Camera mainCam;
 
+        public Vector3 offset = new Vector3(0f, 3f, -8f);
+        public Vector3 rotation = new Vector3(10f, 0f, 0f);
+
         void Awake()
         {
             mainCam = Camera.main;
+        }
+
+        void OnDisable()
+        {
+            //Debug.Log("PlayerCamera.OnDisable");
         }
 
         public override void OnStartLocalPlayer()
@@ -21,8 +31,8 @@ namespace Mirror.Examples.NetworkRoom
                 // configure and make camera a child of player with 3rd person offset
                 mainCam.orthographic = false;
                 mainCam.transform.SetParent(transform);
-                mainCam.transform.localPosition = new Vector3(0f, 3f, -8f);
-                mainCam.transform.localEulerAngles = new Vector3(10f, 0f, 0f);
+                mainCam.transform.localPosition = offset;
+                mainCam.transform.localEulerAngles = rotation;
             }
             else
                 Debug.LogWarning("PlayerCamera: Could not find a camera in scene with 'MainCamera' tag.");
@@ -30,7 +40,7 @@ namespace Mirror.Examples.NetworkRoom
 
         public override void OnStopLocalPlayer()
         {
-            if (mainCam != null)
+            if (mainCam != null && mainCam.transform.parent == transform)
             {
                 mainCam.transform.SetParent(null);
                 SceneManager.MoveGameObjectToScene(mainCam.gameObject, SceneManager.GetActiveScene());

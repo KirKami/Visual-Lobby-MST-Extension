@@ -1,5 +1,4 @@
 using MasterServerToolkit.MasterServer;
-using MasterServerToolkit.Utils;
 using UnityEngine;
 
 namespace MasterServerToolkit.Bridges.MongoDB
@@ -8,13 +7,10 @@ namespace MasterServerToolkit.Bridges.MongoDB
     {
         #region INSPECTOR
 
-        public HelpBox _header = new HelpBox()
-        {
-            Text = "This is Profile DB factory. Assign it to ProfilesModule"
-        };
-
         [Header("Components"), SerializeField]
         private MongoDbClientFactory mongoDbClientFactory;
+        [SerializeField] 
+        private bool saveDataAsBytes;
 
         #endregion
 
@@ -23,7 +19,10 @@ namespace MasterServerToolkit.Bridges.MongoDB
 #if (!UNITY_WEBGL && !UNITY_IOS) || UNITY_EDITOR
             try
             {
-                Mst.Server.DbAccessors.AddAccessor(new ProfilesDatabaseAccessor(mongoDbClientFactory.Client, mongoDbClientFactory.Database));
+                if (saveDataAsBytes)
+                    Mst.Server.DbAccessors.AddAccessor(new ProfilesDatabaseAccessor(mongoDbClientFactory.Client, mongoDbClientFactory.Database));
+                else
+                    Mst.Server.DbAccessors.AddAccessor(new ProfilesDocumentDatabaseAccessor(mongoDbClientFactory.Client, mongoDbClientFactory.Database));
             }
             catch (System.Exception e)
             {

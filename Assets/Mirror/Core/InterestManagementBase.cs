@@ -1,7 +1,6 @@
 // interest management component for custom solutions like
 // distance based, spatial hashing, raycast based, etc.
 // low level base class allows for low level spatial hashing etc., which is 3-5x faster.
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Mirror
@@ -10,27 +9,21 @@ namespace Mirror
     [HelpURL("https://mirror-networking.gitbook.io/docs/guides/interest-management")]
     public abstract class InterestManagementBase : MonoBehaviour
     {
-        // Awake configures InterestManagementBase in NetworkServer/Client
-        // Do NOT check for active server or client here.
-        // Awake must always set the static aoi references.
-        // make sure to call base.Awake when overwriting!
-        protected virtual void Awake()
+        // initialize NetworkServer/Client .aoi.
+        // previously we did this in Awake(), but that's called for disabled
+        // components too. if we do it OnEnable(), then it's not set for
+        // disabled components.
+        protected virtual void OnEnable()
         {
-            if (NetworkServer.aoi == null)
-            {
-                NetworkServer.aoi = this;
-            }
-            else Debug.LogError($"Only one InterestManagement component allowed. {NetworkServer.aoi.GetType()} has been set up already.");
-
-            if (NetworkClient.aoi == null)
-            {
-                NetworkClient.aoi = this;
-            }
-            else Debug.LogError($"Only one InterestManagement component allowed. {NetworkClient.aoi.GetType()} has been set up already.");
+            // do not check if == null or error if already set.
+            // users may enabled/disable components randomly,
+            // causing this to be called multiple times.
+            NetworkServer.aoi = this;
+            NetworkClient.aoi = this;
         }
 
         [ServerCallback]
-        public virtual void Reset() {}
+        public virtual void ResetState() {}
 
         // Callback used by the visibility system to determine if an observer
         // (player) can see the NetworkIdentity. If this function returns true,

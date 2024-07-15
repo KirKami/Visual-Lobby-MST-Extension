@@ -1,4 +1,5 @@
 ﻿using MasterServerToolkit.Extensions;
+using MasterServerToolkit.Json;
 using MasterServerToolkit.Logging;
 using MasterServerToolkit.Networking;
 using System;
@@ -6,7 +7,6 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace MasterServerToolkit.MasterServer
 {
@@ -32,14 +32,7 @@ namespace MasterServerToolkit.MasterServer
         /// <summary>
         /// Profile properties list
         /// </summary>
-        public ConcurrentDictionary<ushort, IObservableProperty> Properties { get; protected set; } = new ConcurrentDictionary<ushort, IObservableProperty>();
-
-        /// <summary>
-        /// Invoked, when one of the values changes
-        /// </summary>
-        public event ProfilePropertyUpdateDelegate OnPropertyUpdatedEvent;
-
-        public ObservableProfile() { }
+        public ConcurrentDictionary<ushort, IObservableProperty> Properties { get; private set; } = new ConcurrentDictionary<ushort, IObservableProperty>();
 
         /// <summary>
         /// Check if profile has changed properties
@@ -52,6 +45,13 @@ namespace MasterServerToolkit.MasterServer
         public int Count { get { return Properties.Count; } }
 
         /// <summary>
+        /// Invoked, when one of the values changes
+        /// </summary>
+        public event ProfilePropertyUpdateDelegate OnPropertyUpdatedEvent;
+
+        public ObservableProfile() { }
+
+        /// <summary>
         /// Returns an observable value of given type
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -61,7 +61,7 @@ namespace MasterServerToolkit.MasterServer
         {
             if (!Properties.ContainsKey(key))
             {
-                Logs.Error($"Observable property with key [{key}] does not exist");
+                Logs.Error($"Observable property with key [{Extensions.StringExtensions.FromHash(key)}] does not exist");
                 return null;
             }
 
@@ -185,27 +185,10 @@ namespace MasterServerToolkit.MasterServer
 
                         if (Properties.ContainsKey(key))
                         {
-                            //Logs.Debug($"{GetType().Name} from bytes property with key {key}".ToGreen());
+                            //Logs.Debug($"{GetType().Name} from bytes property with key {Extensions.StringExtensions.FromHash(key)}".ToGreen());
                             Properties[key].FromBytes(valueData);
                         }
                     }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Restores profile from dictionary of strings
-        /// </summary>
-        /// <param name="dataData"></param>
-        public void FromStrings(Dictionary<ushort, string> dataData)
-        {
-            foreach (var pair in dataData)
-            {
-                Properties.TryGetValue(pair.Key, out IObservableProperty property);
-
-                if (property != null)
-                {
-                    property.Deserialize(pair.Value);
                 }
             }
         }
@@ -316,31 +299,59 @@ namespace MasterServerToolkit.MasterServer
         }
 
         /// <summary>
-        /// Serializes all of the properties to dictionary
+        /// 
         /// </summary>
         /// <returns></returns>
-        public Dictionary<string, string> ToStringsDictionary()
-        {
-            var dict = new Dictionary<string, string>();
-
-            foreach (var pair in Properties)
-            {
-                dict.Add(pair.Key.ToString(), pair.Value.Serialize());
-            }
-
-            return dict;
-        }
-
         public override string ToString()
         {
-            StringBuilder result = new StringBuilder();
+            return ToJson().ToString();
+        }
 
-            foreach (var i in ToStringsDictionary())
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public MstJson ToJson()
+        {
+            var json = MstJson.EmptyObject;
+
+            foreach (var property in Properties.Values)
             {
-                result.Append($"{i.Key}:{i.Value};");
+                json.AddField(Extensions.StringExtensions.FromHash(property.Key), property.ToJson());
             }
 
-            return result.ToString();
+            return json;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="json"></param>
+        public void FromJson(string json)
+        {
+            FromJson(new MstJson(json));
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="json"></param>
+        public void FromJson(MstJson json)
+        {
+            foreach (var property in Properties.Values)
+            {
+                string key = Extensions.StringExtensions.FromHash(property.Key);
+
+                if (json.HasField(key))
+                {
+                    var value = json[key];
+
+                    if (!value.IsNull)
+                    {
+                        property.FromJson(value);
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -348,6 +359,10 @@ namespace MasterServerToolkit.MasterServer
         /// </summary>
         public void Dispose()
         {
+            propertiesToBeSent.Clear();
+            Properties.Clear();
+            OnPropertyUpdatedEvent = null;
+
             Dispose(true);
             GC.SuppressFinalize(this);
         }
@@ -380,7 +395,6 @@ namespace MasterServerToolkit.MasterServer
                 propertiesToBeSent.TryAdd(property.Key, property);
 
             //Logs.Info($"<color=#FF0000>{GetType().Name} OnDirtyPropertyEventHandler for {property.Key}</color>");
-
             OnPropertyUpdatedEvent?.Invoke(property.Key, property);
         }
 

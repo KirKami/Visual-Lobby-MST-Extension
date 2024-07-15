@@ -9,10 +9,6 @@ namespace MasterServerToolkit.MasterServer
     public delegate void GetRegionsCallback(List<RegionInfo> regions);
     public delegate void GetPlayersCallback(List<string> players);
 
-    #region BF_MODIFIED
-    public delegate void FindRandomGameCallback(List<GameInfoPacket> game);
-    #endregion
-
     public class MstMatchmakerClient : MstBaseClient
     {
         /// <summary>
@@ -68,7 +64,7 @@ namespace MasterServerToolkit.MasterServer
                     return;
                 }
 
-                Regions = response.AsPacket(new RegionsPacket()).Regions;
+                Regions = response.AsPacket<RegionsPacket>().Regions;
 
                 int totalRegions = Regions.Count;
 
@@ -161,23 +157,23 @@ namespace MasterServerToolkit.MasterServer
             {
                 if (status != ResponseStatus.Success)
                 {
-                    Logs.Warn(response.AsString("Unknown error occured while requesting a list of games"));
+                    Logs.Error(response.AsString("Unknown error occured while requesting a list of games"));
                     callback?.Invoke(new List<GameInfoPacket>());
                     return;
                 }
 
-                Games = response.AsPacketsList(() => new GameInfoPacket()).ToList();
+                Games = response.AsPacketsList<GameInfoPacket>().ToList();
                 callback?.Invoke(Games);
             });
         }
-        #region BF_MODIFIED
 
+        #region BF_MODIFIED
         /// <summary>
         /// Retrieves a random public game, which pass a provided filter.
         /// (You can implement your own filtering by extending modules or "classes" 
         /// that implement <see cref="IGamesProvider"/>)
         /// </summary>
-        public void FindRandomGame(MstProperties filter, FindRandomGameCallback callback)
+        public void FindRandomGame(MstProperties filter, FindGamesCallback callback)
         {
             FindRandomGame(filter, callback, Connection);
         }
@@ -187,7 +183,7 @@ namespace MasterServerToolkit.MasterServer
         /// (You can implement your own filtering by extending modules or "classes" 
         /// that implement <see cref="IGamesProvider"/>)
         /// </summary>
-        public void FindRandomGame(MstProperties filter, FindRandomGameCallback callback, IClientSocket connection)
+        public void FindRandomGame(MstProperties filter, FindGamesCallback callback, IClientSocket connection)
         {
             if (!connection.IsConnected)
             {
@@ -205,7 +201,8 @@ namespace MasterServerToolkit.MasterServer
                     return;
                 }
 
-                var games = response.AsPacketsList(() => new GameInfoPacket()).ToList();
+                //var games = response.AsPacketsList(() => new GameInfoPacket()).ToList();
+                var games = response.AsPacketsList<GameInfoPacket>().ToList();
                 callback?.Invoke(games);
             });
         }

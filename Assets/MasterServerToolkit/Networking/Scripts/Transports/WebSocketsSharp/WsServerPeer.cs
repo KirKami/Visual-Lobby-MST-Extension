@@ -1,5 +1,4 @@
-﻿using MasterServerToolkit.Logging;
-using MasterServerToolkit.MasterServer;
+﻿using MasterServerToolkit.MasterServer;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using WebSocketSharp;
@@ -71,32 +70,35 @@ namespace MasterServerToolkit.Networking
             base.Dispose(disposing);
         }
 
-        private async Task SendDelayedMessages()
+        private Task SendDelayedMessages()
         {
-            await Task.Delay(200);
-
-            if (delayedMessages == null)
+            return Task.Run(async () =>
             {
-                logger.Error("Delayed messages are already sent");
-                return;
-            }
+                await Task.Delay(200);
 
-            lock (delayedMessages)
-            {
                 if (delayedMessages == null)
+                {
+                    logger.Error("Delayed messages are already sent");
                     return;
+                }
 
-                var delayedMessagesCopy = delayedMessages;
-                delayedMessages = null;
+                lock (delayedMessages)
+                {
+                    if (delayedMessages == null)
+                        return;
 
-                foreach (var data in delayedMessagesCopy)
-                    serviceForPeer.SendAsync(data);
-            }
+                    var delayedMessagesCopy = delayedMessages;
+                    delayedMessages = null;
+
+                    foreach (var data in delayedMessagesCopy)
+                        serviceForPeer.SendAsync(data);
+                }
+            });
         }
 
         public override void SendMessage(IOutgoingMessage message, DeliveryMethod deliveryMethod)
         {
-            if (serviceForPeer.ConnectionState == WebSocketSharp.WebSocketState.Open)
+            if (serviceForPeer.ReadyState == WebSocketState.Open)
             {
                 // There's a bug in websockets
                 // When server sends a message to client right after client
@@ -115,12 +117,12 @@ namespace MasterServerToolkit.Networking
                     }
                 }
 
-                Mst.Analytics.RegisterOpCodeTrafic(message.OpCode, message.Data.LongLength, TrafficType.Outgoing);
+                Mst.TrafficStatistics.RegisterOpCodeTrafic(message.OpCode, message.Data.LongLength, TrafficType.Outgoing);
                 serviceForPeer.SendAsync(message.ToBytes());
             }
             else
             {
-                Logs.Error($"Server is trying to send data to peer {Id}, but it is not connected");
+                logger.Error($"Server is trying to send data to peer {Id}, but it is not connected");
             }
         }
 

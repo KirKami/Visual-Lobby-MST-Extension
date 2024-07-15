@@ -88,12 +88,11 @@ namespace MasterServerToolkit.MasterServer
                 html.Append($"<b>Max Online Count:</b> {options.MaxConnections}, ");
                 html.Append($"<b>Password:</b> {options.Password}, ");
                 html.Append($"<b>Region:</b> {options.Region}, ");
+                html.Append($"<b>CustomOptions:</b> {options.CustomOptions}");
 
                 #region BF_MODIFIED
                 html.Append($"<b>Type:</b> {options.Type}, ");
-#endregion
-
-                html.Append($"<b>CustomOptions:</b> {options.CustomOptions}");
+                #endregion
 
                 html.Append("</li>");
             }
@@ -245,7 +244,7 @@ namespace MasterServerToolkit.MasterServer
             #region BF_MODIFIED
             //GET ROOM TYPE FILTER
             GameInfoType filterType = GameInfoType.Unknown;
-            
+
             if (filters != null && filters.Has(Mst.Args.Names.RoomType))
             {
                 filterType = (GameInfoType)filters.AsInt(Mst.Args.Names.RoomType);
@@ -261,7 +260,6 @@ namespace MasterServerToolkit.MasterServer
                     if (room.Options.Type != filterType) continue;
                 }
                 #endregion
-
                 var game = new GameInfoPacket
                 {
                     Id = room.RoomId,
@@ -352,7 +350,7 @@ namespace MasterServerToolkit.MasterServer
                 return;
             }
 
-            var options = message.AsPacket(new RoomOptions());
+            var options = message.AsPacket<RoomOptions>();
             var room = RegisterRoom(message.Peer, options);
 
             logger.Debug($"Room {room.RoomId} has been successfully registered with options: {options}");
@@ -389,7 +387,7 @@ namespace MasterServerToolkit.MasterServer
         protected virtual void ValidateRoomAccessRequestHandler(IIncomingMessage message)
         {
             // Parse message
-            var data = message.AsPacket(new RoomAccessValidatePacket());
+            var data = message.AsPacket<RoomAccessValidatePacket>();
 
             // Trying to find room in list of registered
             if (!TryGetRoom(data.RoomId, out RegisteredRoom room))
@@ -431,7 +429,7 @@ namespace MasterServerToolkit.MasterServer
 
         protected virtual void SaveRoomOptionsRequestHandler(IIncomingMessage message)
         {
-            var data = message.AsPacket(new SaveRoomOptionsPacket());
+            var data = message.AsPacket<SaveRoomOptionsPacket>();
 
             if (!TryGetRoom(data.RoomId, out RegisteredRoom room))
             {
@@ -452,7 +450,7 @@ namespace MasterServerToolkit.MasterServer
 
         protected virtual void GetRoomAccessRequestHandler(IIncomingMessage message)
         {
-            var data = message.AsPacket(new RoomAccessRequestPacket());
+            var data = message.AsPacket<RoomAccessRequestPacket>();
 
             // Let's find a room by Id which the player wants to join
             if (!TryGetRoom(data.RoomId, out RegisteredRoom room))
@@ -483,7 +481,7 @@ namespace MasterServerToolkit.MasterServer
 
         protected virtual void PlayerLeftRoomRequestHandler(IIncomingMessage message)
         {
-            var data = message.AsPacket(new PlayerLeftRoomPacket());
+            var data = message.AsPacket<PlayerLeftRoomPacket>();
 
             if (!TryGetRoom(data.RoomId, out RegisteredRoom room))
             {
@@ -505,5 +503,3 @@ namespace MasterServerToolkit.MasterServer
         #endregion
     }
 }
-
-

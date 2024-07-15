@@ -2,7 +2,7 @@
 
 namespace MasterServerToolkit.MasterServer
 {
-    public partial struct MstOpCodes
+    public struct MstOpCodes
     {
         public static ushort Error = "mst.error".ToUint16Hash();
 
@@ -50,8 +50,9 @@ namespace MasterServerToolkit.MasterServer
         public static ushort ConfirmEmail = nameof(ConfirmEmail).ToUint16Hash();
         public static ushort GetLoggedInUsersCount = nameof(GetLoggedInUsersCount).ToUint16Hash();
         public static ushort ChangePassword = nameof(ChangePassword).ToUint16Hash();
-        public static ushort GetPeerAccountInfo = nameof(GetPeerAccountInfo).ToUint16Hash();
-        public static ushort UpdateAccountInfo = nameof(UpdateAccountInfo).ToUint16Hash();
+        public static ushort GetAccountInfoByPeer = nameof(GetAccountInfoByPeer).ToUint16Hash();
+        public static ushort GetAccountInfoByUsername = nameof(GetAccountInfoByUsername).ToUint16Hash();
+        public static ushort BindExtraProperties = nameof(BindExtraProperties).ToUint16Hash();
 
         public static ushort PickUsername = nameof(PickUsername).ToUint16Hash();
         public static ushort JoinChannel = nameof(JoinChannel).ToUint16Hash();
@@ -111,5 +112,10 @@ namespace MasterServerToolkit.MasterServer
         public static ushort SystemInfo = nameof(SystemInfo).ToUint16Hash();
         public static ushort ServerInfo = nameof(ServerInfo).ToUint16Hash();
         public static ushort ModulesInfo = nameof(ModulesInfo).ToUint16Hash();
+
+        public static ushort ClientUpdateAchievementProgress = nameof(ClientUpdateAchievementProgress).ToUint16Hash();
+        public static ushort ClientCheckAchievementProgress = nameof(ClientCheckAchievementProgress).ToUint16Hash();
+        public static ushort ClientAchievementProgressIsMet = nameof(ClientAchievementProgressIsMet).ToUint16Hash();
+        public static ushort ServerUpdateAchievementProgress = nameof(ServerUpdateAchievementProgress).ToUint16Hash();
     }
 }

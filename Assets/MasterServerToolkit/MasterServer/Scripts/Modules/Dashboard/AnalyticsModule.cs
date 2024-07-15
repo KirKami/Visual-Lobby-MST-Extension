@@ -133,7 +133,8 @@ namespace MasterServerToolkit.MasterServer
             if (connectionHelper.IsConnected)
             {
                 // Gather server info analytics
-                var serverInfoPacket = ServerInfoPacket.FromJobject(Server.JsonInfo());
+                var serverInfoPacket = new ServerInfoPacket();
+                serverInfoPacket.FromJson(Server.JsonInfo());
                 serverInfoPacket.Id = dashboardInfoId;
 
                 connectionHelper.Connection.SendMessage(MstOpCodes.ServerInfo, serverInfoPacket, (status, respond) =>
@@ -165,7 +166,7 @@ namespace MasterServerToolkit.MasterServer
                     var moduleInfoPacket = new ModuleInfoPacket
                     {
                         Id = dashboardInfoId,
-                        Module = moduleInfo.GetField("name").stringValue,
+                        Module = moduleInfo.GetField("name").StringValue,
                         Data = moduleInfo
                     };
 

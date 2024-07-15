@@ -1,7 +1,8 @@
+using MasterServerToolkit.Json;
 using MasterServerToolkit.Networking;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace MasterServerToolkit.MasterServer
@@ -24,12 +25,12 @@ namespace MasterServerToolkit.MasterServer
         /// <summary>
         /// List of recipients
         /// </summary>
-        protected Dictionary<string, NotificationRecipient> registeredRecipients = new Dictionary<string, NotificationRecipient>();
+        protected ConcurrentDictionary<string, NotificationRecipient> registeredRecipients = new ConcurrentDictionary<string, NotificationRecipient>();
 
         /// <summary>
         /// List of messages to be sent to newly logged in users
         /// </summary>
-        private List<string> promisedMessages = new List<string>();
+        protected List<string> promisedMessages = new List<string>();
 
         /// <summary>
         /// 
@@ -72,7 +73,7 @@ namespace MasterServerToolkit.MasterServer
             }
 
             server.RegisterMessageHandler(MstOpCodes.SubscribeToNotifications, OnSubscribeToNotificationsMessageHandler);
-            server.RegisterMessageHandler(MstOpCodes.UnsubscribeFromNotifications, OnUnsubscribeToNotificationsMessageHandler);
+            server.RegisterMessageHandler(MstOpCodes.UnsubscribeFromNotifications, OnUnsubscribeFromNotificationsMessageHandler);
             server.RegisterMessageHandler(MstOpCodes.Notification, OnNotificationMessageHandler);
         }
 
@@ -90,10 +91,10 @@ namespace MasterServerToolkit.MasterServer
         /// <summary>
         /// Invoked when user logs in
         /// </summary>
-        /// <param name="user"></param>
-        protected virtual void OnUserLoggedInEventHandler(IUserPeerExtension user)
+        /// <param name="userPeerExtension"></param>
+        protected virtual void OnUserLoggedInEventHandler(IUserPeerExtension userPeerExtension)
         {
-            var r = AddRecipient(user);
+            var r = AddRecipient(userPeerExtension);
 
             foreach (var message in promisedMessages)
                 r.Notify(message);
@@ -102,10 +103,27 @@ namespace MasterServerToolkit.MasterServer
         /// <summary>
         /// Invoked when user logs out
         /// </summary>
-        /// <param name="user"></param>
-        protected virtual void OnUserLoggedOutEventHandler(IUserPeerExtension user)
+        /// <param name="userPeerExtension"></param>
+        protected virtual void OnUserLoggedOutEventHandler(IUserPeerExtension userPeerExtension)
         {
-            RemoveRecipient(user.UserId);
+            RemoveRecipient(userPeerExtension.UserId);
+        }
+
+        public override MstJson JsonInfo()
+        {
+            var json = base.JsonInfo();
+
+            try
+            {
+                json.AddField("description", $"This is the {nameof(NotificationModule)} theat helps rooms send notifications to their players or helps admins of Master server send notifications to list of recipients");
+                json.AddField("recipients", registeredRecipients.Count);
+            }
+            catch (Exception e)
+            {
+                json.AddField("error", e.ToString());
+            }
+
+            return json;
         }
 
         public override MstProperties Info()
@@ -158,7 +176,7 @@ namespace MasterServerToolkit.MasterServer
             if (!HasRecipient(user.UserId))
             {
                 var r = new NotificationRecipient(user.UserId, user.Peer);
-                registeredRecipients.Add(user.UserId, r);
+                registeredRecipients.TryAdd(user.UserId, r);
                 return r;
             }
             else
@@ -173,7 +191,7 @@ namespace MasterServerToolkit.MasterServer
         /// <param name="userId"></param>
         public void RemoveRecipient(string userId)
         {
-            registeredRecipients.Remove(userId);
+            registeredRecipients.TryRemove(userId, out _);
         }
 
         /// <summary>
@@ -182,12 +200,12 @@ namespace MasterServerToolkit.MasterServer
         /// <param name="roomId"></param>
         /// <param name="ignoreRecipients"></param>
         /// <param name="textMessage"></param>
-        public virtual void NoticeToRoom(int roomId, List<int> ignoreRecipients, string textMessage, IIncomingMessage message)
+        public virtual void NoticeToRoom(int roomId, List<int> ignoreRecipients, string textMessage)
         {
             // If rooms module not found
             if (!roomsModule)
             {
-                message.Respond($"This message is for room users, but rooms module is not found");
+                logger.Error($"This message is for room users, but rooms module is not found");
                 return;
             }
 
@@ -205,6 +223,16 @@ namespace MasterServerToolkit.MasterServer
                     recipient.Notify(textMessage);
                 }
             }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="recipient"></param>
+        /// <param name="textMessage"></param>
+        public virtual void NoticeToRecipient(int recipient, string textMessage)
+        {
+            NoticeToRecipients(new List<int> { recipient }, textMessage);
         }
 
         /// <summary>
@@ -243,8 +271,16 @@ namespace MasterServerToolkit.MasterServer
         /// <param name="addToPromise"></param>
         public virtual void NoticeToAll(string textMessage, bool addToPromise = false)
         {
-            var recipients = authModule.LoggedInUsers.ToList().Select(i => i.Peer.Id).ToList();
-            NoticeToRecipients(recipients, textMessage);
+            if (!authModule)
+            {
+                logger.Error($"This message is for authorized users, but auth module is not found");
+                return;
+            }
+
+            foreach (var recipient in registeredRecipients.Values)
+            {
+                recipient.Notify(textMessage);
+            }
 
             if (addToPromise && !promisedMessages.Contains(textMessage))
             {
@@ -269,14 +305,15 @@ namespace MasterServerToolkit.MasterServer
                 // If unauthorized user is trying to subscribe the notifications
                 if (userExtension == null)
                 {
-                    message.Respond("Unauthorized request", ResponseStatus.Unauthorized);
+                    message.Respond(ResponseStatus.Unauthorized);
+                    logger.Error("Unauthorized user is trying to subscribe to notifications");
                     return;
                 }
 
                 // If is already subscribed
                 if (HasRecipient(userExtension.UserId))
                 {
-                    message.Respond("You are already subscribed to notifications", ResponseStatus.NotHandled);
+                    message.Respond(ResponseStatus.Success);
                     return;
                 }
 
@@ -290,11 +327,11 @@ namespace MasterServerToolkit.MasterServer
             catch (Exception e)
             {
                 logger.Error(e.Message);
-                message.Respond(e.Message, ResponseStatus.Error);
+                message.Respond(ResponseStatus.Error);
             }
         }
 
-        protected virtual void OnUnsubscribeToNotificationsMessageHandler(IIncomingMessage message)
+        protected virtual void OnUnsubscribeFromNotificationsMessageHandler(IIncomingMessage message)
         {
             try
             {
@@ -302,14 +339,11 @@ namespace MasterServerToolkit.MasterServer
                 var userExtension = message.Peer.GetExtension<IUserPeerExtension>();
 
                 // If unauthorized user is trying to subscribe the notifications
-                if (userExtension == null)
+                if (userExtension != null)
                 {
-                    message.Respond("Unauthorized request", ResponseStatus.Unauthorized);
-                    return;
+                    // Remove recipient
+                    RemoveRecipient(userExtension.UserId);
                 }
-
-                // Add new recipient
-                RemoveRecipient(userExtension.UserId);
 
                 // Respond about successfull unsubscription
                 message.Respond(ResponseStatus.Success);
@@ -318,7 +352,7 @@ namespace MasterServerToolkit.MasterServer
             catch (Exception e)
             {
                 logger.Error(e.Message);
-                message.Respond(e.Message, ResponseStatus.Error);
+                message.Respond(ResponseStatus.Error);
             }
         }
 
@@ -328,23 +362,25 @@ namespace MasterServerToolkit.MasterServer
             {
                 if (!HasPermissionToNotify(message.Peer))
                 {
-                    message.Respond($"Unauthorized request", ResponseStatus.Unauthorized);
+                    message.Respond(ResponseStatus.Unauthorized);
+                    logger.Error("The room tries to send a notification, but does not have the right to do so");
                     return;
                 }
 
                 // Parse notification
-                var notification = message.AsPacket(new NotificationPacket());
+                var notification = message.AsPacket<NotificationPacket>();
 
                 if (string.IsNullOrEmpty(notification.Message))
                 {
-                    message.Respond($"Message cannot be empty");
+                    message.Respond(ResponseStatus.Invalid);
+                    logger.Error("Message cannot be empty");
                     return;
                 }
 
                 // Check if notification for room users
                 if (useRoomsModule && notification.RoomId >= 0)
                 {
-                    NoticeToRoom(notification.RoomId, notification.IgnoreRecipients, notification.Message, message);
+                    NoticeToRoom(notification.RoomId, notification.IgnoreRecipients, notification.Message);
                 }
                 else if (notification.Recipients.Count > 0)
                 {
@@ -357,7 +393,7 @@ namespace MasterServerToolkit.MasterServer
             catch (Exception e)
             {
                 logger.Error(e.Message);
-                message.Respond(e.Message, ResponseStatus.Error);
+                message.Respond(ResponseStatus.Error);
             }
         }
 

@@ -12,12 +12,12 @@ namespace MasterServerToolkit.MasterServer
         /// <summary>
         /// Version of the framework
         /// </summary>
-        public static string Version => "4.15.0";
+        public static string Version => "4.17.0";
 
         /// <summary>
         /// Just name of the framework
         /// </summary>
-        public static string Name => "MASTER SERVER TOOLKIT";
+        public static string Name => "Master Server Toolkit";
 
         /// <summary>
         /// Main connection to master server
@@ -80,7 +80,7 @@ namespace MasterServerToolkit.MasterServer
         /// <summary>
         /// 
         /// </summary>
-        public static MstAnalytics Analytics { get; private set; }
+        public static MstTrafficStatistics TrafficStatistics { get; private set; }
 
         /// <summary>
         /// 
@@ -92,11 +92,6 @@ namespace MasterServerToolkit.MasterServer
         /// </summary>
         public static MstLocalization Localization { get; private set; }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        public static MstRegistry Registry { get; private set; }
-
         static Mst()
         {
             Initialize();
@@ -107,7 +102,6 @@ namespace MasterServerToolkit.MasterServer
             Helper = new MstHelper();
             Args = new MstArgs();
             Localization = new MstLocalization();
-            Registry = new MstRegistry();
             Settings = new MstAdvancedSettings();
             Runtime = new MstRuntime();
 
@@ -119,7 +113,7 @@ namespace MasterServerToolkit.MasterServer
             Create = new MstCreate();
             Concurrency = new MstConcurrency();
             Events = new MstEventsChannel();
-            Analytics = new MstAnalytics();
+            TrafficStatistics = new MstTrafficStatistics();
             Options = new MstProperties();
         }
     }

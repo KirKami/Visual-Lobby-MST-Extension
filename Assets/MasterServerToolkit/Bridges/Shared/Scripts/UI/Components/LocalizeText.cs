@@ -1,4 +1,6 @@
+using MasterServerToolkit.Logging;
 using MasterServerToolkit.MasterServer;
+using System;
 using TMPro;
 using UnityEngine;
 
@@ -9,7 +11,7 @@ namespace MasterServerToolkit.Bridges
         #region INSPECTOR
 
         [Header("Settings"), SerializeField]
-        private TMP_Text lableText;
+        private TextMeshProUGUI lableText;
         [SerializeField]
         private string localizationKey = "localizationKey";
 
@@ -17,13 +19,22 @@ namespace MasterServerToolkit.Bridges
 
         private void Awake()
         {
-            UpdateLocalization();
             Mst.Localization.LanguageChangedEvent += Localization_OnLanguageChangedEventHandler;
+        }
+
+        private void Start()
+        {
+            UpdateLocalization();
         }
 
         private void OnDestroy()
         {
             Mst.Localization.LanguageChangedEvent -= Localization_OnLanguageChangedEventHandler;
+        }
+
+        private void OnEnable()
+        {
+            UpdateLocalization();
         }
 
         private void Localization_OnLanguageChangedEventHandler(string language)
@@ -33,9 +44,17 @@ namespace MasterServerToolkit.Bridges
 
         private void UpdateLocalization()
         {
-            if (lableText != null)
+            try
             {
-                lableText.text = Mst.Localization[localizationKey];
+                if (lableText != null)
+                {
+                    string text = Mst.Localization[localizationKey];
+                    lableText.text = text;
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
             }
         }
 

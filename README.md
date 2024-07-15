@@ -10,8 +10,8 @@ This means differentiating between Lobby and Room servers, switching between dif
 
 ## Package Contents:
 
-### Mirror v78.2.1  
-### Master Server Toolkit v4.15.1  
+### Mirror v89.12.2  
+### Master Server Toolkit v4.17.24b 
 ### Visual Lobby System  
 - Extensions: source collection of modified MST components to help solve errors and bugs when updating MST. For ease of use extensions marked by BF_MODIFIED region,
 - Prefabs: UI prefabs for modular premade server search menu sample and core networking components prefab,
@@ -43,9 +43,9 @@ This means differentiating between Lobby and Room servers, switching between dif
 
 ## Third-Party used:
 
-Mirror version - v78.2.1 [Link](https://github.com/MirrorNetworking/Mirror/releases/tag/v78.2.1)
+Mirror version - v89.2.2 [Link](https://github.com/MirrorNetworking/Mirror/releases/tag/v89.12.2)
 
-Master Server Toolkit version - v4.15.1 [Link](https://github.com/aevien/master-server-toolkit)
+Master Server Toolkit version - v4.17.24b [Link](https://github.com/aevien/master-server-toolkit)
 
 ## About Extentions:
 

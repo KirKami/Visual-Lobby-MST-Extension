@@ -1,4 +1,5 @@
-﻿using MasterServerToolkit.Logging;
+﻿using MasterServerToolkit.DebounceThrottle;
+using MasterServerToolkit.Logging;
 using MasterServerToolkit.Networking;
 using System;
 using System.Collections.Concurrent;
@@ -10,8 +11,6 @@ using UnityEngine;
 
 namespace MasterServerToolkit.MasterServer
 {
-    public delegate ObservableServerProfile ObservableProfileFactoryDelegate(string userId, IPeer clientPeer);
-
     /// <summary>
     /// Handles player profiles within master server.
     /// Listens to changes in player profiles, and sends updates to
@@ -23,7 +22,7 @@ namespace MasterServerToolkit.MasterServer
         #region INSPECTOR
 
         [Header("General Settings")]
-        [SerializeField, Tooltip("If true, chat module will subscribe to auth module, and automatically setup chat users when they log in")]
+        [SerializeField, Tooltip("If true, profiles module will subscribe to auth module, and automatically setup user profile when they log in")]
         protected bool useAuthModule = true;
 
         /// <summary>
@@ -53,33 +52,22 @@ namespace MasterServerToolkit.MasterServer
         public int editProfilePermissionLevel = 0;
 
         /// <summary>
-        /// Ignore errors occurred when profile data mismatch
-        /// </summary>
-        [Tooltip("Ignore errors occurred when profile data mismatch")]
-        public bool ignoreProfileMissmatchError = false;
-
-        /// <summary>
         /// Database accessor factory that helps to create integration with profile db
         /// </summary>
         [Tooltip("Database accessor factory that helps to create integration with profile db")]
         public DatabaseAccessorFactory databaseAccessorFactory;
 
+        [SerializeField]
+        private ObservableBasePopulator[] populators;
+
         #endregion
+
+        private readonly float timeToWaitProfile = 10f * 1000f;
 
         /// <summary>
         /// Auth module for listening to auth events
         /// </summary>
         protected AuthModule authModule;
-
-        /// <summary>
-        /// List of profiles that will be saved to to DB with updates
-        /// </summary>
-        protected readonly HashSet<string> profilesToBeSaved = new HashSet<string>();
-
-        /// <summary>
-        /// List of profiles that will be sent to clients with updates
-        /// </summary>
-        protected readonly HashSet<string> profilesToBeSentToClients = new HashSet<string>();
 
         /// <summary>
         /// DB to work with profile data
@@ -92,34 +80,23 @@ namespace MasterServerToolkit.MasterServer
         protected readonly ConcurrentDictionary<string, ObservableServerProfile> profilesList = new ConcurrentDictionary<string, ObservableServerProfile>();
 
         /// <summary>
-        /// By default, profiles module will use this factory to create a profile for users.
-        /// If you're using profiles, you will need to change this factory to construct the
-        /// structure of a profile.
-        /// </summary>
-        public ObservableProfileFactoryDelegate ProfileFactory { get; set; }
-
-        /// <summary>
         /// Gets list of userprofiles
         /// </summary>
         public IEnumerable<ObservableServerProfile> Profiles => profilesList.Values;
 
         /// <summary>
-        /// Ignore errors occurred when profile data mismatch. False by default
+        /// It is performed after initialization of the profile structure
         /// </summary>
-        public bool IgnoreProfileMissmatchError
-        {
-            get { return ignoreProfileMissmatchError; }
-            set { ignoreProfileMissmatchError = value; }
-        }
+        public event Action<ObservableServerProfile> OnProfileCreated;
+
+        /// <summary>
+        /// It is performed after loading the profile from the database
+        /// </summary>
+        public event Action<ObservableServerProfile> OnProfileLoaded;
 
         protected override void Awake()
         {
             base.Awake();
-
-            if (DestroyIfExists())
-            {
-                return;
-            }
 
             // Add auth module as a dependency of this module
             AddOptionalDependency<AuthModule>();
@@ -146,6 +123,7 @@ namespace MasterServerToolkit.MasterServer
                 if (authModule)
                 {
                     authModule.OnUserLoggedInEvent += OnUserLoggedInEventHandler;
+                    authModule.OnUserLoggedOutEvent += OnUserLoggedOutEvent;
                 }
                 else
                 {
@@ -153,9 +131,9 @@ namespace MasterServerToolkit.MasterServer
                 }
             }
 
-            server.RegisterMessageHandler(MstOpCodes.ServerFillInProfileValues, GameServerProfileRequestHandler);
+            server.RegisterMessageHandler(MstOpCodes.ServerFillInProfileValues, ServerFillInProfileValuesRequestHandler);
             server.RegisterMessageHandler(MstOpCodes.ServerUpdateProfileValues, ServerUpdateProfileValuesHandler);
-            server.RegisterMessageHandler(MstOpCodes.ClientFillInProfileValues, ClientFillInProfileValuesHandler);
+            server.RegisterMessageHandler(MstOpCodes.ClientFillInProfileValues, ClientFillInProfileValuesRequestHandler);
         }
 
         public override MstProperties Info()
@@ -175,35 +153,63 @@ namespace MasterServerToolkit.MasterServer
         /// <param name="accountData"></param>
         protected virtual async void OnUserLoggedInEventHandler(IUserPeerExtension user)
         {
-            user.Peer.OnConnectionCloseEvent += OnPeerPlayerDisconnectedEventHandler;
-
-            // Create a profile
-            ObservableServerProfile profile;
-
-            if (profilesList.ContainsKey(user.UserId))
+            try
             {
-                // There's a profile from before, which we can use
-                profile = profilesList[user.UserId];
-                profile.ClientPeer = user.Peer;
+                user.Peer.OnConnectionCloseEvent += OnPeerPlayerDisconnectedEventHandler;
+
+                // Create a profile
+                ObservableServerProfile profile;
+
+                if (profilesList.ContainsKey(user.UserId))
+                {
+                    logger.Debug($"User {user.UserId} already contains profile in memory. Uset it");
+
+                    // There's a profile from before, which we can use
+                    profile = profilesList[user.UserId];
+                    profile.ClientPeer = user.Peer;
+                }
+                else
+                {
+                    logger.Debug($"User {user.UserId} needs to create or load profile from db");
+
+                    // We need to create a new one
+                    profile = CreateProfile(user.UserId, user.Peer);
+                    profile.SaveThrottleDispatcher = new DebounceDispatcher((int)(saveProfileDebounceTime * 1000f));
+                    profile.SendDebounceDispatcher = new DebounceDispatcher((int)(clientUpdateDebounceTime * 1000f));
+                    profile.UnloadDebounceDispatcher = new DebounceDispatcher((int)(unloadProfileAfter * 1000f));
+
+                    profilesList.TryAdd(user.UserId, profile);
+
+                    // Restore profile data from database
+                    await profileDatabaseAccessor.RestoreProfileAsync(profile);
+
+                    logger.Info(profile);
+
+                    // Listen to profile events
+                    profile.OnModifiedInServerEvent += OnProfileChangedEventHandler;
+
+                    OnProfileLoaded?.Invoke(profile);
+                }
+
+                // 
+                profile.ClearUpdates();
+
+                // Save profile property
+                user.Peer.AddExtension(new ProfilePeerExtension(profile, user.Peer));
             }
-            else
+            catch (Exception ex)
             {
-                // We need to create a new one
-                profile = CreateProfile(user.UserId, user.Peer);
-                profilesList.TryAdd(user.UserId, profile);
+                logger.Error(ex);
             }
+        }
 
-            // Restore profile data from database
-            await profileDatabaseAccessor.RestoreProfileAsync(profile);
-
-            // 
-            profile.ClearUpdates();
-
-            // Save profile property
-            user.Peer.AddExtension(new ProfilePeerExtension(profile, user.Peer));
-
-            // Listen to profile events
-            profile.OnModifiedInServerEvent += OnProfileChangedEventHandler;
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="user"></param>
+        protected virtual void OnUserLoggedOutEvent(IUserPeerExtension user)
+        {
+            user.Peer.ClearExtension<ProfilePeerExtension>();
         }
 
         /// <summary>
@@ -215,10 +221,16 @@ namespace MasterServerToolkit.MasterServer
         /// <returns></returns>
         protected virtual ObservableServerProfile CreateProfile(string userId, IPeer clientPeer)
         {
-            if (ProfileFactory != null)
-                return ProfileFactory.Invoke(userId, clientPeer);
+            var profile = new ObservableServerProfile(userId, clientPeer);
 
-            return new ObservableServerProfile(userId, clientPeer);
+            foreach (var populator in populators)
+            {
+                profile.Add(populator.Populate());
+            }
+
+            OnProfileCreated?.Invoke(profile);
+
+            return profile;
         }
 
         /// <summary>
@@ -227,30 +239,8 @@ namespace MasterServerToolkit.MasterServer
         /// <param name="profile"></param>
         protected virtual void OnProfileChangedEventHandler(ObservableServerProfile profile)
         {
-            var user = profile.ClientPeer.GetExtension<IUserPeerExtension>();
-
-            if (!user.Account.IsGuest || (user.Account.IsGuest && authModule.SaveGuestInfo))
-            {
-                lock (profilesToBeSaved)
-                {
-                    if (!profilesToBeSaved.Contains(profile.UserId) && profile.ShouldBeSavedToDatabase)
-                    {
-                        // If profile is not already waiting to be saved
-                        profilesToBeSaved.Add(profile.UserId);
-                        SaveProfile(profile, saveProfileDebounceTime);
-                    }
-                }
-            }
-
-            lock (profilesToBeSentToClients)
-            {
-                if (!profilesToBeSentToClients.Contains(profile.UserId))
-                {
-                    // If it's a master server
-                    profilesToBeSentToClients.Add(profile.UserId);
-                    SendUpdatesToClient(profile, clientUpdateDebounceTime);
-                }
-            }
+            SaveProfile(profile);
+            SendUpdatesToClient(profile);
         }
 
         /// <summary>
@@ -266,7 +256,7 @@ namespace MasterServerToolkit.MasterServer
             if (profileExtension != null)
             {
                 // Unload profile
-                _ = UnloadProfile(profileExtension.UserId, unloadProfileAfter);
+                UnloadProfile(profileExtension.UserId);
             }
         }
 
@@ -274,80 +264,60 @@ namespace MasterServerToolkit.MasterServer
         /// Saves a profile into database after delay
         /// </summary>
         /// <param name="profile"></param>
-        /// <param name="delay"></param>
         /// <returns></returns>
-        protected async void SaveProfile(ObservableServerProfile profile, float delay)
+        protected void SaveProfile(ObservableServerProfile profile)
         {
-            // Wait for the delay
-            await Task.Delay(Mathf.RoundToInt(delay < 0.01f ? 0.01f * 1000 : delay * 1000));
-
-            lock (profilesToBeSaved)
+            profile.SaveThrottleDispatcher.DebounceAsync(async () =>
             {
-                // Remove value from debounced updates
-                profilesToBeSaved.Remove(profile.UserId);
-            }
-
-            await profileDatabaseAccessor.UpdateProfileAsync(profile);
+                await profileDatabaseAccessor.UpdateProfileAsync(profile);
+            });
         }
 
         /// <summary>
         /// Collects changes in the profile, and sends them to client after delay
         /// </summary>
         /// <param name="profile"></param>
-        /// <param name="delay"></param>
         /// <returns></returns>
-        protected async void SendUpdatesToClient(ObservableServerProfile profile, float delay)
+        protected void SendUpdatesToClient(ObservableServerProfile profile)
         {
-            // Wait for the delay
-            await Task.Delay(Mathf.RoundToInt(delay < 0.01f ? 0.01f * 1000 : delay * 1000));
-
             if (profile.ClientPeer == null || !profile.ClientPeer.IsConnected)
             {
                 // If client is not connected, and we don't need to send him profile updates
                 profile.ClearUpdates();
-
-                lock (profilesToBeSentToClients)
-                {
-                    // Remove value from debounced updates
-                    profilesToBeSentToClients.Remove(profile.UserId);
-                }
-
                 return;
             }
 
-            // Get profile updated data in bytes
-            var updates = profile.GetUpdates();
-
-            // Clear updated data in profile
-            profile.ClearUpdates();
-
-            // Send these data to client
-            profile.ClientPeer.SendMessage(MessageHelper.Create(MstOpCodes.UpdateClientProfile, updates), DeliveryMethod.ReliableSequenced);
-
-            lock (profilesToBeSentToClients)
+            profile.SendDebounceDispatcher.Debounce(() =>
             {
-                // Remove value from debounced updates
-                profilesToBeSentToClients.Remove(profile.UserId);
-            }
+                // Get profile updated data in bytes
+                var updates = profile.GetUpdates();
+
+                // Clear updated data in profile
+                profile.ClearUpdates();
+
+                // Send these data to client
+                profile.ClientPeer.SendMessage(MessageHelper.Create(MstOpCodes.UpdateClientProfile, updates), DeliveryMethod.ReliableSequenced);
+            });
         }
 
         /// <summary>
         /// Unloads profile after a period of time
         /// </summary>
-        /// <param name="userId"></param>
-        /// <param name="delay"></param>
+        /// <param name="profile"></param>
         /// <returns></returns>
-        protected async Task UnloadProfile(string userId, float delay)
+        protected void UnloadProfile(string userId)
         {
-            // Wait for the delay
-            await Task.Delay(Mathf.RoundToInt(delay < 0.01f ? 0.01f * 1000 : delay * 1000));
-
-            // If user is logged in, do nothing
-            if (authModule.IsUserLoggedInById(userId))
-                return;
-
             if (profilesList.TryRemove(userId, out ObservableServerProfile profile) && profile != null)
-                profile.OnModifiedInServerEvent -= OnProfileChangedEventHandler;
+            {
+                profile.UnloadDebounceDispatcher.Debounce(() =>
+                {
+                    // If user is logged in, do nothing
+                    if (authModule.IsUserLoggedInById(userId))
+                        return;
+
+                    profile.OnModifiedInServerEvent -= OnProfileChangedEventHandler;
+                });
+            }
         }
 
         /// <summary>
@@ -373,7 +343,7 @@ namespace MasterServerToolkit.MasterServer
         {
             if (!HasPermissionToEditProfiles(message.Peer))
             {
-                Logs.Error("Master server received an update for a profile, but peer who tried to " +
+                logger.Error("Master server received an update for a profile, but peer who tried to " +
                            "update it did not have sufficient permissions");
                 return;
             }
@@ -419,38 +389,33 @@ namespace MasterServerToolkit.MasterServer
         /// Handles a request from client to get profile
         /// </summary>
         /// <param name="message"></param>
-        protected virtual async void ClientFillInProfileValuesHandler(IIncomingMessage message)
+        protected virtual async void ClientFillInProfileValuesRequestHandler(IIncomingMessage message)
         {
+            var user = message.Peer.GetExtension<IUserPeerExtension>();
+
+            if (user == null)
+            {
+                message.Respond(ResponseStatus.Unauthorized);
+                return;
+            }
+
             int totalTime = 0;
             ProfilePeerExtension profileExt = null;
 
             // Wait for user profile
-            while (totalTime < 10 * 1000)
+            while (totalTime < timeToWaitProfile && message.Peer.TryGetExtension(out profileExt) == false)
             {
-                await Task.Delay(10);
+                await Task.Delay(100);
                 totalTime += 100;
-
-                if (message.Peer.TryGetExtension(out profileExt))
-                    break;
             }
 
             if (profileExt == null)
             {
-                message.Respond("Profile not found", ResponseStatus.Failed);
+                message.Respond(ResponseStatus.NotFound);
                 return;
             }
 
-            var clientPropertiesCount = message.AsInt();
-
             profileExt.Profile.ClientPeer = message.Peer;
-
-            if (!ignoreProfileMissmatchError && clientPropertiesCount != profileExt.Profile.Count)
-            {
-                logger.Error(string.Format($"Client requested a profile with {clientPropertiesCount} properties, but server " +
-                                           $"constructed a profile with {profileExt.Profile.Count}. Make sure that you've changed the " +
-                                           "profile factory on the ProfilesModule"));
-            }
-
             message.Respond(profileExt.Profile.ToBytes(), ResponseStatus.Success);
         }
 
@@ -458,25 +423,47 @@ namespace MasterServerToolkit.MasterServer
         /// Handles a request from game server to get a profile
         /// </summary>
         /// <param name="message"></param>
-        protected virtual void GameServerProfileRequestHandler(IIncomingMessage message)
+        protected virtual async void ServerFillInProfileValuesRequestHandler(IIncomingMessage message)
         {
-            if (!HasPermissionToEditProfiles(message.Peer))
+            try
             {
-                message.Respond("Invalid permission level", ResponseStatus.Unauthorized);
-                return;
+                if (!HasPermissionToEditProfiles(message.Peer))
+                {
+                    logger.Error("Master server received a request to get a profile, but peer who tried to " +
+                               "update it did not have sufficient permissions");
+                    message.Respond(ResponseStatus.Unauthorized);
+                    return;
+                }
+
+                int totalTime = 0;
+                var userId = message.AsString();
+
+                ObservableServerProfile profile = null;
+
+                // Wait for user profile
+                while (totalTime < timeToWaitProfile)
+                {
+                    await Task.Delay(100);
+                    totalTime += 100;
+
+                    if (profilesList.TryGetValue(userId, out profile) && profile != null)
+                        break;
+                }
+
+                if (profile == null)
+                {
+                    message.Respond(ResponseStatus.Failed);
+                    return;
+                }
+
+                byte[] rawProfile = profile.ToBytes();
+
+                message.Respond(rawProfile, ResponseStatus.Success);
             }
-
-            var userId = message.AsString();
-
-            profilesList.TryGetValue(userId, out ObservableServerProfile profile);
-
-            if (profile == null)
+            catch (Exception e)
             {
-                message.Respond(ResponseStatus.Failed);
-                return;
+                logger.Error(e);
             }
-
-            message.Respond(profile.ToBytes(), ResponseStatus.Success);
         }
 
         #endregion

@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 2338929351766837712}
   - component: {fileID: 2338929351766837708}
   - component: {fileID: 2338929351766837709}
+  - component: {fileID: 4009287822611931655}
   m_Layer: 0
   m_Name: --ROOM_SERVER
   m_TagString: Untagged
@@ -51,19 +52,37 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   dontDestroyOnLoad: 1
   runInBackground: 1
+  headlessStartMode: 0
+  editorAutoStart: 0
+  sendRate: 30
   autoStartServerBuild: 0
   autoConnectClientBuild: 0
-  sendRate: 30
   offlineScene: 
   onlineScene: 
   transport: {fileID: 670987132267666208}
   networkAddress: localhost
   maxConnections: 10
+  disconnectInactiveConnections: 0
+  disconnectInactiveTimeout: 60
   authenticator: {fileID: 0}
   playerPrefab: {fileID: 7619140271685878370, guid: 9f0094c1325091d42a558274b947221f, type: 3}
   autoCreatePlayer: 1
   playerSpawnMethod: 0
   spawnPrefabs: []
+  exceptionsDisconnect: 1
+  snapshotSettings:
+    bufferTimeMultiplier: 2
+    bufferLimit: 32
+    catchupNegativeThreshold: -1
+    catchupPositiveThreshold: 1
+    catchupSpeed: 0.019999999552965164
+    slowdownSpeed: 0.03999999910593033
+    driftEmaDuration: 1
+    dynamicAdjustment: 1
+    dynamicAdjustmentTolerance: 1
+    deliveryTimeEmaDuration: 2
+  evaluationMethod: 0
+  evaluationInterval: 3
   timeInterpolationGui: 0
   roomServerManager: {fileID: 2338929351766837712}
   logLevel: 0
@@ -81,7 +100,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b0fecffa3f624585964b0d0eb21b18e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Port: 7777
+  port: 7777
   DualMode: 1
   NoDelay: 1
   Interval: 10
@@ -93,8 +112,8 @@ MonoBehaviour:
   SendWindowSize: 4096
   MaxRetransmit: 40
   MaximizeSocketBuffers: 1
-  ReliableMaxMessageSize: 298449
-  UnreliableMaxMessageSize: 1199
+  ReliableMaxMessageSize: 297433
+  UnreliableMaxMessageSize: 1194
   debugLog: 0
   statisticsGUI: 1
   statisticsLog: 0
@@ -121,6 +140,18 @@ MonoBehaviour:
   OnBeforeRoomRegisterEvent:
     m_PersistentCalls:
       m_Calls:
+      - m_Target: {fileID: 4009287822611931655}
+        m_TargetAssemblyTypeName: VisualLobby.EditorTestEnvironmentSettings, VisualLobby.Editor
+        m_MethodName: OverrideRoomOptionsInTest
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
       - m_Target: {fileID: 2338929351766837714}
         m_TargetAssemblyTypeName: VisualLobby.Extensions.Mirror.AdditiveLevelsRoomNetworkManager,
           Assembly-CSharp
@@ -185,6 +216,33 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   roomServerManager: {fileID: 2338929351766837712}
   active: 1
+--- !u!114 &4009287822611931655
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2338929351766837713}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 656544018af1cc4468e797ef96c1c71f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  logLevel: 3
+  isGlobal: 0
+  useEditorDebugMode: 1
+  roomServerManager: {fileID: 2338929351766837712}
+  roomOptions:
+    Name: TestEnviroment
+    RoomIp: 127.0.0.1
+    RoomPort: 7777
+    IsPublic: 1
+    MaxConnections: 4
+    Password: 
+    AccessTimeoutPeriod: 5
+    Region: International
+    Type: 1
+  roomOnlineScene: 
 --- !u!1001 &405895398929454666
 PrefabInstance:
   m_ObjectHideFlags: 0

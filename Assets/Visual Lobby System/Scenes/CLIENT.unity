@@ -38,7 +38,6 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -199,6 +198,7 @@ Canvas:
   m_OverrideSorting: 0
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
   m_AdditionalShaderChannelsFlag: 25
   m_SortingLayerID: 0
   m_SortingOrder: 0
@@ -438,6 +438,7 @@ MonoBehaviour:
   ignoreHideAll: 0
   useRaycastBlock: 1
   blockInput: 0
+  unlockCursor: 0
   logLevel: 3
   titleLable: {fileID: 0}
   OnShowEvent:
@@ -783,6 +784,9 @@ MonoBehaviour:
   maxAttemptsToConnect: 5
   waitAndConnect: 0.2
   connectOnStart: 1
+  useSecure: 0
+  service: mst
+  password: mst
   OnConnectedEvent:
     m_PersistentCalls:
       m_Calls: []
@@ -1076,7 +1080,7 @@ PrefabInstance:
     - target: {fileID: 4180842736270822485, guid: 6f139267009e9a44cb68786e53bdb5dc, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 684460239}
+      objectReference: {fileID: 0}
     - target: {fileID: 4180842736270822485, guid: 6f139267009e9a44cb68786e53bdb5dc, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Target
       value: 
@@ -1099,7 +1103,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4180842736270822485, guid: 6f139267009e9a44cb68786e53bdb5dc, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: RandomGameConnector, Assembly-CSharp
+      value: VisualLobby.AlternativeGameConnector, VisualLobby
       objectReference: {fileID: 0}
     - target: {fileID: 4180842736270822485, guid: 6f139267009e9a44cb68786e53bdb5dc, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_BoolArgument
@@ -1595,7 +1599,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   logLevel: 0
   initModulesAtStart: 1
-  clientToMasterConnector: {fileID: 0}
+  clientToMasterConnector: {fileID: 178791789}
   rememberUser: 1
   defaultUsername: qwerty
   defaultEmail: qwerty@mail.com
@@ -1670,6 +1674,7 @@ MonoBehaviour:
   logLevel: 0
   initModulesAtStart: 0
   matchCreationTimeout: 60
+  customSpawnOptions: []
   OnRoomStartedEvent:
     m_PersistentCalls:
       m_Calls:
@@ -3602,6 +3607,7 @@ Canvas:
   m_OverrideSorting: 0
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
   m_AdditionalShaderChannelsFlag: 25
   m_SortingLayerID: 0
   m_SortingOrder: 0

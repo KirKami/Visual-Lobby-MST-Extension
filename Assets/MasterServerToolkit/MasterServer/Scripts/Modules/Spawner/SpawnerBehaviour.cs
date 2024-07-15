@@ -41,11 +41,6 @@ namespace MasterServerToolkit.MasterServer
         [SerializeField, Tooltip("Default path to executable file")]
         protected string executableFilePath = "";
 
-        #region BF_MODIFIED
-        [SerializeField, Tooltip("Default path to lobby executable file")]
-        protected string lobbyExecutableFilePath = "";
-        #endregion
-
         [SerializeField, Tooltip("Max number of rooms/server SpawnerController can run")]
         protected int maxProcesses = 5;
 
@@ -106,9 +101,9 @@ namespace MasterServerToolkit.MasterServer
         /// </summary>
         public UnityEvent OnSpawnerStoppedEvent;
 
-        #region BF_MODIFIED
+        //NOTE: WAS MODIFIED
+        //public Extentions.SpawnerLobbyCreator lobbyCreator;
         public bool roomStartingProcessCompleted = false;
-        #endregion
 
         protected virtual void Awake()
         {
@@ -199,10 +194,7 @@ namespace MasterServerToolkit.MasterServer
                 MaxProcesses = Mst.Args.AsInt(Mst.Args.Names.MaxProcesses, maxProcesses),
                 MachineIp = machineIp,
                 Region = region,
-
-                #region BF_MODIFIED
                 RoomType = GameInfoType.Room,
-                #endregion
             };
 
             // If we're running in editor, and we want to override the executable path
@@ -213,10 +205,6 @@ namespace MasterServerToolkit.MasterServer
             else
             {
                 executableFilePath = Mst.Args.AsString(Mst.Args.Names.RoomExecutablePath, executableFilePath);
-
-                #region BF_MODIFIED
-                lobbyExecutableFilePath = Mst.Args.AsString(Mst.Args.Names.LobbyExecutablePath, lobbyExecutableFilePath);
-                #endregion
             }
 
             logger.Info($"Registering as a spawner with options: \n{spawnerOptions}");
@@ -281,8 +269,6 @@ namespace MasterServerToolkit.MasterServer
         /// Invokes when spawner registered and started
         /// </summary>
         protected virtual void OnSpawnerStarted() { }
-        
-        #region BF_MODIFIED
         public void ChangeExecutablePath(string targetString)
         {
             Logs.Debug("Spawner Executable Path changed to " + targetString);
@@ -290,11 +276,10 @@ namespace MasterServerToolkit.MasterServer
             spawnerController.SpawnSettings.ExecutablePath = executableFilePath;
         }
 
-        public void CreateLobby()
+        //NOTE: WAS MODIFIED
+        public void CreateLobby(string lobbyPath)
         {
             Mst.Events.Invoke(MstEventKeys.showLoadingInfo, "Starting lobby... Please wait!");
-
-            ChangeExecutablePath(lobbyExecutableFilePath);
 
             Logs.Debug("Starting lobby... Please wait!");
 
@@ -302,6 +287,7 @@ namespace MasterServerToolkit.MasterServer
 
             // Spawn options for spawner controller
             var spawnOptions = new MstProperties();
+            spawnOptions.Add(Mst.Args.Names.RoomExecutablePath, lobbyPath);
             spawnOptions.Add(Mst.Args.Names.RoomMaxConnections, 100);
             spawnOptions.Add(Mst.Args.Names.RoomName, roomNameRe.Replace(region, "_"));
             spawnOptions.Add(Mst.Args.Names.RoomType, (int)GameInfoType.Lobby);
@@ -311,16 +297,6 @@ namespace MasterServerToolkit.MasterServer
             {
                 StopSpawner();
             });
-            // Wait for spawning status until it is finished
-            // This status must be send by room
-            MstTimer.WaitWhile(() =>
-            {
-                return !roomStartingProcessCompleted;
-            }, (isSuccess) =>
-            {
-                ChangeExecutablePath(executableFilePath);
-
-            }, (uint)60);
         }
         /// <summary>
         /// Sends request to master server to start new lobby room process
@@ -404,6 +380,5 @@ namespace MasterServerToolkit.MasterServer
                 }, 60);
             });
         }
-        #endregion
     }
 }

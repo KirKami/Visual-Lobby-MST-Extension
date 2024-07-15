@@ -26,7 +26,7 @@ namespace MasterServerToolkit.MasterServer
 
         private void OnNotifyHttpRequestHandler(HttpListenerRequest request, HttpListenerResponse response)
         {
-            var jsonResponse = new MstJson();
+            var jsonResponse = MstJson.EmptyObject;
 
             try
             {
@@ -41,7 +41,7 @@ namespace MasterServerToolkit.MasterServer
                 if (!notificationModule) throw new Exception("[NotificationModule] not found");
 
                 // Read message
-                string message = jsonRequest.GetField("message").stringValue;
+                string message = jsonRequest.GetField("message").StringValue;
 
                 // Send message to all recipients
                 notificationModule.NoticeToAll(message, true);

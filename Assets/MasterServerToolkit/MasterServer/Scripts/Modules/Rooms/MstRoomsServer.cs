@@ -51,6 +51,7 @@ namespace MasterServerToolkit.MasterServer
         {
             RegisterRoom(options, callback, Connection);
         }
+
         /// <summary>
         /// Sends a request to register a room to master server
         /// </summary>
@@ -161,7 +162,7 @@ namespace MasterServerToolkit.MasterServer
                     return;
                 }
 
-                callback.Invoke(response.AsPacket(new UsernameAndPeerIdPacket()), null);
+                callback.Invoke(response.AsPacket<UsernameAndPeerIdPacket>(), null);
             });
         }
 

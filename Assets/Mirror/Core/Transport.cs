@@ -36,6 +36,12 @@ namespace Mirror
         /// <summary>Is this transport available in the current platform?</summary>
         public abstract bool Available();
 
+        /// <summary>Is this transported encrypted for secure communication?</summary>
+        public virtual bool IsEncrypted => false;
+
+        /// <summary>If encrypted, which cipher is used?</summary>
+        public virtual string EncryptionCipher => "";
+
         // client //////////////////////////////////////////////////////////////
         /// <summary>Called by Transport when the client connected to the server.</summary>
         public Action OnClientConnected;
@@ -53,12 +59,16 @@ namespace Mirror
         /// <summary>Called by Transport when the client encountered an error.</summary>
         public Action<TransportError, string> OnClientError;
 
+        /// <summary>Called by Transport when the client encountered an error.</summary>
+        public Action<Exception> OnClientTransportException;
+
         /// <summary>Called by Transport when the client disconnected from the server.</summary>
         public Action OnClientDisconnected;
 
         // server //////////////////////////////////////////////////////////////
         /// <summary>Called by Transport when a new client connected to the server.</summary>
         public Action<int> OnServerConnected;
+        public Action<int, string> OnServerConnectedWithAddress;
 
         /// <summary>Called by Transport when the server received a message from a client.</summary>
         public Action<int, ArraySegment<byte>, int> OnServerDataReceived;
@@ -73,6 +83,10 @@ namespace Mirror
         /// <summary>Called by Transport when a server's connection encountered a problem.</summary>
         /// If a Disconnect will also be raised, raise the Error first.
         public Action<int, TransportError, string> OnServerError;
+
+        /// <summary>Called by Transport when a server's connection encountered a problem.</summary>
+        /// If a Disconnect will also be raised, raise the Error first.
+        public Action<int, Exception> OnServerTransportException;
 
         /// <summary>Called by Transport when a client disconnected from the server.</summary>
         public Action<int> OnServerDisconnected;

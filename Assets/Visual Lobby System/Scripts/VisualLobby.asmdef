@@ -1,0 +1,20 @@
+{
+    "name": "VisualLobby",
+    "rootNamespace": "VisualLobby",
+    "references": [
+        "GUID:2948b6d2fd2566849831c5b0d1107749",
+        "GUID:30817c1a0e6d646d99c048fc403f5979",
+        "GUID:627104647b9c04b4ebb8978a92ecac63",
+        "GUID:fecf25954bb196642ab50657689761d6",
+        "GUID:97f5683429a99994c9ddc93c619b8efd"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -45,13 +45,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   logLevel: 0
-  isGlobal: 1
   maxHeight: 1
   toggleSpeed: 1000
   toggleHotkey: '`'
   toggleFullHotkey: '#`'
   bufferSize: 512
-  consoleFont: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
+  consoleFont: {fileID: 0}
   inputCaret: '>'
   showGUIButtons: 0
   rightAlignButtons: 0

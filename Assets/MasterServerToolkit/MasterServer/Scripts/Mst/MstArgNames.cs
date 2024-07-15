@@ -68,6 +68,16 @@
         public string RoomPort => "-mstRoomPort";
 
         /// <summary>
+        /// Port, assigned to the spawned process (most likely a game server). Reverse-proxy version
+        /// </summary>
+        public string RoomClientPort => "-mstRoomClientPort";
+
+        /// <summary>
+        /// This parameter is passed to the client to specify which connection to the room it should make, secure or not. Reverse-proxy version
+        /// </summary>
+        public string RoomClientUseSecure => "-mstRoomClientUseSecure";
+
+        /// <summary>
         /// Use this cmd if you want a spawner to start creating room ports from your own specific value
         /// </summary>
         public string RoomDefaultPort => "-mstRoomDefaultPort";
@@ -104,7 +114,6 @@
 
         #region BF_MODIFIED
         /// <summary>
-        /// ADDED FOR VISUAL LOBBY
         /// Use this cmd to setup room as visual lobby server or game session
         /// </summary>
         public string RoomType => "-mstRoomType";
@@ -129,7 +138,27 @@
         /// <summary>
         /// Use this cmd if youwant to connect to you database with some connection string
         /// </summary>
-        public string DbConnectionString => "-mstDbConnectionString";
+        public string DatabaseConnectionString => "-mstDatabaseConnectionString";
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string DatabaseConfiguration => "-mstDatabaseConfiguration";
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string DatabaseAutoCloseConnection => "-mstDatabaseAutoCloseConnection";
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string DatabaseLanguageType => "-mstDatabaseLanguageType";
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string DatabaseProvider => "-mstDatabaseProvider";
 
         /// <summary>
         /// Id of the lobby, for which the process was spawned
@@ -142,12 +171,7 @@
         public string MaxProcesses => "-mstMaxProcesses";
 
         /// <summary>
-        /// Application key
-        /// </summary>
-        public string ApplicationKey => "-mstAppKey";
-
-        /// <summary>
-        /// Whether or not to use secure connection
+        /// Whether or not to use secure connection to server(not room)
         /// </summary>
         public string UseSecure => "-mstUseSecure";
 

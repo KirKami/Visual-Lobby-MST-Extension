@@ -1,3 +1,4 @@
+using MasterServerToolkit.Json;
 using MasterServerToolkit.MasterServer;
 using System.Text;
 using UnityEngine;
@@ -22,7 +23,7 @@ namespace MasterServerToolkit.Bridges
             if (!_value.Equals(value))
             {
                 _value = value;
-                MarkDirty();
+                MarkAsDirty();
             }
         }
 
@@ -35,7 +36,7 @@ namespace MasterServerToolkit.Bridges
 
         public override void Deserialize(string value)
         {
-            value = !value.StartsWith("#") ? $"#{value}" : value;
+            value = value.StartsWith("#") ? value : $"#{value}";
 
             if (!ColorUtility.TryParseHtmlString(value, out _value))
                 _value = Color.white;
@@ -44,7 +45,7 @@ namespace MasterServerToolkit.Bridges
         public override void FromBytes(byte[] data)
         {
             Deserialize(Encoding.UTF8.GetString(data));
-            MarkDirty();
+            MarkAsDirty();
         }
 
         public override byte[] GetUpdates()
@@ -61,6 +62,21 @@ namespace MasterServerToolkit.Bridges
         public override byte[] ToBytes()
         {
             return Encoding.UTF8.GetBytes(Serialize());
+        }
+
+        public override MstJson ToJson()
+        {
+            return _value.ToJson();
+        }
+
+        public override void FromJson(MstJson json)
+        {
+            _value = json.ToColor();
+        }
+
+        public override void FromJson(string json)
+        {
+            FromJson(new MstJson(json));
         }
     }
 }

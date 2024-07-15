@@ -1,7 +1,8 @@
 ﻿using UnityEngine;
 
-namespace Mirror.Examples.MultipleAdditiveScenes
+namespace Mirror.Examples.Common
 {
+    [AddComponentMenu("")]
     public class PhysicsSimulator : MonoBehaviour
     {
         PhysicsScene physicsScene;

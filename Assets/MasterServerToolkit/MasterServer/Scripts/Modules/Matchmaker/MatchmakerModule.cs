@@ -77,12 +77,6 @@ namespace MasterServerToolkit.MasterServer
                     list.Add(game);
                 }
 
-                if (list.Count == 0)
-                {
-                    message.Respond("No game found. Try to create your own game", ResponseStatus.Default);
-                    return;
-                }
-
                 // Convert to generic list and serialize to bytes
                 var bytes = list.Select(game => (ISerializablePacket)game).ToBytes();
                 message.Respond(bytes, ResponseStatus.Success);
@@ -91,7 +85,7 @@ namespace MasterServerToolkit.MasterServer
             catch (Exception e)
             {
                 logger.Error(e.Message);
-                message.Respond(e.Message, ResponseStatus.Error);
+                message.Respond(ResponseStatus.Error);
             }
         }
 
@@ -150,7 +144,7 @@ namespace MasterServerToolkit.MasterServer
                 {
                     //Find random game in list and remove all other games
                     Random r = new Random();
-                    GameInfoPacket gameFound = list[r.Next(0,list.Count)];
+                    GameInfoPacket gameFound = list[r.Next(0, list.Count)];
                     list.RemoveAll(e => e != gameFound);
                 }
 
